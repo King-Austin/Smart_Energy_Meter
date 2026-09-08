@@ -1,88 +1,98 @@
 import React, { useState } from 'react';
 import { useMeter } from '../../context/MeterContext';
-import { Wallet, Plus, Zap, RefreshCw, ChevronRight } from 'lucide-react';
+import { Zap, Plus, ShieldCheck, ChevronRight, AlertCircle } from 'lucide-react';
 import { FundWalletModal } from './FundWalletModal';
 
 export const WalletCard: React.FC = () => {
-  const { meterData, toggleAutoTopup, setActiveTab } = useMeter();
+  const { meterData, setActiveTab } = useMeter();
   const [isFundModalOpen, setIsFundModalOpen] = useState(false);
+
+  const isLowUnits = meterData.prepaid_units_kwh < 20;
 
   return (
     <>
-      <div className="relative overflow-hidden rounded-[28px] p-5 bg-gradient-to-br from-neutral-900 via-neutral-900/95 to-neutral-950 border border-neutral-800/80 shadow-lg group">
-        {/* Ambient Top Glow (Apple Wallet style) */}
-        <div className="absolute -top-12 -right-12 w-44 h-44 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/25 transition-all duration-500"></div>
+      <div className="glass-card p-5 relative overflow-hidden group">
+        {/* Subtle Warm Brand Ambient Glow */}
+        <div className="absolute -top-10 -right-10 w-44 h-44 bg-[#ff5b26]/8 dark:bg-[#ff5b26]/15 rounded-full blur-3xl pointer-events-none group-hover:bg-[#ff5b26]/15 transition-all duration-500"></div>
 
-        {/* Card Header */}
-        <div className="flex items-center justify-between relative z-10 mb-3">
+        {/* Header Row */}
+        <div className="flex items-center justify-between relative z-10 mb-2.5">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-2xl bg-emerald-500/15 text-emerald-400">
-              <Wallet className="w-4 h-4" />
+            <div className="p-2 rounded-xl bg-[#ff5b26]/12 text-[#ff5b26]">
+              <Zap className="w-4 h-4 fill-current" />
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                Prepaid Electricity Wallet
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#ff5b26]">
+                Active Balance
               </span>
-              <h4 className="text-xs font-semibold text-neutral-400">
-                {meterData.meter_name} ({meterData.meter_id})
+              <h4 className="text-xs font-bold text-slate-700 dark:text-neutral-300">
+                {meterData.meter_name}
               </h4>
             </div>
           </div>
 
           <button
             onClick={() => setActiveTab('wallet')}
-            className="flex items-center gap-1 text-[11px] font-semibold text-neutral-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 text-xs font-bold text-[#ff5b26] hover:text-[#e04818] transition-colors"
           >
-            <span>History</span>
+            <span>Wallet History</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Large Balance Display */}
+        {/* Large Unit Balance Display */}
         <div className="my-2 relative z-10">
-          <span className="text-[11px] text-neutral-400 font-medium block">
-            Current Credit Balance
-          </span>
-          <div className="flex items-baseline gap-1 my-0.5">
-            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mono-num">
-              {meterData.currency_symbol}
-              {meterData.wallet_balance.toLocaleString()}
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl sm:text-5xl font-black tracking-tight text-slate-950 dark:text-white mono-num">
+              {meterData.prepaid_units_kwh.toFixed(1)}
+            </span>
+            <span className="text-xl sm:text-2xl font-bold text-slate-600 dark:text-slate-400">
+              Units (kWh)
             </span>
           </div>
 
-          {/* Units Remaining & Days Runway */}
-          <div className="flex items-center gap-2 mt-1">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 mono-num">
-              <Zap className="w-3 h-3" />
-              {meterData.prepaid_units_kwh.toFixed(1)} kWh remaining
+          {/* Currency Equivalent & Duration Runway */}
+          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#ff5b26]/10 text-[#ff5b26] border border-[#ff5b26]/20 mono-num">
+              ≈ {meterData.currency_symbol}{meterData.wallet_balance.toLocaleString()}
             </span>
-            <span className="text-xs text-neutral-400 font-medium">
-              ≈ {meterData.estimated_days_remaining} days at current rate
+            <span className="text-xs text-slate-500 dark:text-neutral-400 font-medium">
+              Estimated duration: ~{meterData.estimated_days_remaining} days remaining
             </span>
           </div>
         </div>
 
-        {/* Quick Action Pill Buttons */}
-        <div className="grid grid-cols-2 gap-2.5 pt-4 mt-3 border-t border-neutral-800/80 relative z-10">
+        {/* In-Card Low Units Alert Banner */}
+        {isLowUnits && (
+          <div
+            onClick={() => setIsFundModalOpen(true)}
+            className="mt-3 p-2.5 rounded-xl bg-[#ff5b26]/10 border border-[#ff5b26]/20 flex items-center justify-between cursor-pointer hover:bg-[#ff5b26]/15 transition-all text-xs text-[#ff5b26] font-semibold"
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>You are running low on units. Recharge now</span>
+            </div>
+            <span className="font-bold underline underline-offset-2">Top Up</span>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-2.5 pt-4 mt-3 border-t border-slate-200/80 dark:border-neutral-800/80 relative z-10">
           <button
             onClick={() => setIsFundModalOpen(true)}
-            className="btn-primary text-xs py-2.5 px-3 rounded-2xl flex items-center justify-center gap-1.5 shadow-md"
+            className="btn-primary text-xs py-2.5 px-3 flex items-center justify-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
-            <span>Fund Wallet</span>
+            <span>Buy Light / Fund</span>
           </button>
 
           <button
-            onClick={toggleAutoTopup}
-            className={`text-xs py-2.5 px-3 rounded-2xl border font-semibold flex items-center justify-center gap-1.5 transition-all ${
-              meterData.auto_topup_enabled
-                ? 'bg-neutral-800 text-emerald-400 border-emerald-500/30'
-                : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white'
-            }`}
+            onClick={() => setActiveTab('settings')}
+            className="text-xs py-2.5 px-3 rounded-2xl border font-bold flex items-center justify-center gap-1.5 transition-all bg-slate-100 dark:bg-neutral-800/80 text-slate-700 dark:text-neutral-300 border-slate-200 dark:border-neutral-700 hover:bg-slate-200"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${meterData.auto_topup_enabled ? 'text-emerald-400' : ''}`} />
+            <ShieldCheck className="w-3.5 h-3.5 text-[#ff5b26]" />
             <span>
-              Auto-Topup: {meterData.auto_topup_enabled ? 'ON' : 'OFF'}
+              Tariff: ₦{meterData.tariff_rate}/kWh
             </span>
           </button>
         </div>

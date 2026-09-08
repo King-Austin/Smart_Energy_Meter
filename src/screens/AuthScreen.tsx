@@ -47,7 +47,7 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between p-6 bg-neutral-950 text-neutral-100 animate-fade-in">
+    <div className="min-h-screen flex flex-col justify-between p-6 bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 animate-fade-in">
       
       {/* ====================================================================
           1. WELCOME ONBOARDING SCREEN (PRD Section 4)
@@ -56,30 +56,30 @@ export const AuthScreen: React.FC = () => {
         <div className="flex-1 flex flex-col justify-between py-12">
           {/* Top Logo */}
           <div className="text-center pt-8">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 mx-auto flex items-center justify-center mb-6 shadow-glow">
+            <div className="w-16 h-16 rounded-3xl bg-[#ff5b26]/15 border border-[#ff5b26]/30 text-[#ff5b26] mx-auto flex items-center justify-center mb-6 shadow-sm">
               <Zap className="w-8 h-8" />
             </div>
 
-            <h1 className="text-4xl font-extrabold tracking-tight text-white font-display">
+            <h1 className="text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white font-display">
               Meter
             </h1>
-            <p className="text-sm text-neutral-400 max-w-xs mx-auto mt-3 leading-relaxed">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto mt-3 leading-relaxed">
               Know your energy. Understand your usage. Share when needed.
             </p>
           </div>
 
           {/* Value Pillars */}
-          <div className="space-y-3 max-w-xs mx-auto w-full my-6 text-xs text-neutral-300">
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-neutral-900/80 border border-neutral-800">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></div>
+          <div className="space-y-3 max-w-xs mx-auto w-full my-6 text-xs text-neutral-700 dark:text-neutral-300">
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800 shadow-sm">
+              <div className="w-2 h-2 rounded-full bg-[#ff5b26] flex-shrink-0"></div>
               <span>Real-time whole-house electricity consumption</span>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-neutral-900/80 border border-neutral-800">
-              <div className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0"></div>
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800 shadow-sm">
+              <div className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0"></div>
               <span>Accurate bill estimates & peak trends</span>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-neutral-900/80 border border-neutral-800">
-              <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></div>
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800 shadow-sm">
+              <div className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></div>
               <span>Cloud-synchronized energy sharing with peers</span>
             </div>
           </div>
@@ -112,15 +112,15 @@ export const AuthScreen: React.FC = () => {
           <div>
             <button
               onClick={() => setStep('welcome')}
-              className="text-xs text-neutral-400 hover:text-white mb-6"
+              className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white mb-6"
             >
               ← Back
             </button>
 
-            <h2 className="text-2xl font-bold font-display text-white">
+            <h2 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">
               {step === 'signin' ? 'Welcome Back' : 'Create an Account'}
             </h2>
-            <p className="text-xs text-neutral-400 mt-1 mb-6">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 mb-6">
               {step === 'signin'
                 ? 'Sign in to access your whole-house Meter telemetry'
                 : 'Register to connect and monitor your smart electrical meter'}
@@ -134,7 +134,7 @@ export const AuthScreen: React.FC = () => {
               className="space-y-3 text-xs"
             >
               <div>
-                <label className="block text-neutral-400 mb-1 font-medium">
+                <label className="block text-neutral-600 dark:text-neutral-400 mb-1 font-medium">
                   Email Address or Phone Number
                 </label>
                 <div className="relative">
@@ -144,13 +144,13 @@ export const AuthScreen: React.FC = () => {
                     required
                     value={emailOrPhone}
                     onChange={e => setEmailOrPhone(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-neutral-900 text-sm text-neutral-100 border border-neutral-800 focus:outline-none focus:border-emerald-500"
+                    className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-neutral-900 text-sm text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-neutral-800 focus:outline-none focus:border-[#ff5b26]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-neutral-400 mb-1 font-medium">
+                <label className="block text-neutral-600 dark:text-neutral-400 mb-1 font-medium">
                   Password
                 </label>
                 <div className="relative">
@@ -160,7 +160,7 @@ export const AuthScreen: React.FC = () => {
                     required
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-neutral-900 text-sm text-neutral-100 border border-neutral-800 focus:outline-none focus:border-emerald-500"
+                    className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-neutral-900 text-sm text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-neutral-800 focus:outline-none focus:border-[#ff5b26]"
                   />
                 </div>
               </div>
@@ -183,7 +183,7 @@ export const AuthScreen: React.FC = () => {
                 Don't have an account?{' '}
                 <button
                   onClick={() => setStep('register')}
-                  className="text-emerald-400 font-semibold underline"
+                  className="text-[#ff5b26] font-semibold underline"
                 >
                   Sign Up
                 </button>
@@ -193,7 +193,7 @@ export const AuthScreen: React.FC = () => {
                 Already have an account?{' '}
                 <button
                   onClick={() => setStep('signin')}
-                  className="text-emerald-400 font-semibold underline"
+                  className="text-[#ff5b26] font-semibold underline"
                 >
                   Sign In
                 </button>
@@ -211,16 +211,16 @@ export const AuthScreen: React.FC = () => {
           <div>
             <button
               onClick={() => setStep('signin')}
-              className="text-xs text-neutral-400 hover:text-white mb-6"
+              className="text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white mb-6"
             >
               ← Back
             </button>
 
-            <h2 className="text-2xl font-bold font-display text-white">
+            <h2 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">
               Verification Code
             </h2>
-            <p className="text-xs text-neutral-400 mt-1 mb-8">
-              We sent a 6-digit code to <span className="text-neutral-200">{emailOrPhone}</span>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 mb-8">
+              We sent a 6-digit code to <span className="font-semibold text-neutral-900 dark:text-neutral-200">{emailOrPhone}</span>
             </p>
 
             {/* OTP Boxes */}
@@ -236,7 +236,7 @@ export const AuthScreen: React.FC = () => {
                     newOtp[idx] = e.target.value;
                     setOtpCode(newOtp);
                   }}
-                  className="w-11 h-13 text-center text-lg font-bold rounded-xl bg-neutral-900 border border-neutral-700 focus:outline-none focus:border-emerald-500 text-emerald-400 mono-num"
+                  className="w-11 h-13 text-center text-lg font-bold rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 focus:outline-none focus:border-[#ff5b26] text-[#ff5b26] mono-num"
                 />
               ))}
             </div>
@@ -252,7 +252,7 @@ export const AuthScreen: React.FC = () => {
 
           <div className="text-center text-xs text-neutral-500">
             Didn't receive code?{' '}
-            <button className="text-emerald-400 underline">Resend Code</button>
+            <button className="text-[#ff5b26] underline font-semibold">Resend Code</button>
           </div>
         </div>
       )}
@@ -263,28 +263,28 @@ export const AuthScreen: React.FC = () => {
       {step === 'add_meter' && (
         <div className="flex-1 flex flex-col justify-between py-6">
           <div>
-            <h2 className="text-2xl font-bold font-display text-white">
+            <h2 className="text-2xl font-bold font-display text-neutral-900 dark:text-white">
               Connect Your Meter
             </h2>
-            <p className="text-xs text-neutral-400 mt-1 mb-6">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 mb-6">
               Scan the QR code printed on the physical enclosure or enter the Meter ID manually.
             </p>
 
             {/* QR Scanner Simulator */}
-            <div className="p-6 rounded-3xl bg-neutral-900 border border-neutral-800 text-center mb-5 relative overflow-hidden">
+            <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-center mb-5 relative overflow-hidden shadow-sm">
               {isScanningQR ? (
                 <div className="py-8 space-y-2">
-                  <div className="w-12 h-12 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin mx-auto"></div>
-                  <p className="text-xs text-emerald-400 font-semibold">
+                  <div className="w-12 h-12 rounded-full border-2 border-[#ff5b26] border-t-transparent animate-spin mx-auto"></div>
+                  <p className="text-xs text-[#ff5b26] font-semibold">
                     Reading QR Code Optical Pattern...
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="w-24 h-24 rounded-2xl bg-neutral-950 border border-neutral-700 mx-auto flex items-center justify-center relative group">
-                    <QrCode className="w-12 h-12 text-emerald-400" />
+                  <div className="w-24 h-24 rounded-2xl bg-neutral-100 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 mx-auto flex items-center justify-center relative group">
+                    <QrCode className="w-12 h-12 text-[#ff5b26]" />
                     {/* Viewfinder corners */}
-                    <div className="absolute inset-1 border-2 border-emerald-500/40 rounded-xl pointer-events-none"></div>
+                    <div className="absolute inset-1 border-2 border-[#ff5b26]/40 rounded-xl pointer-events-none"></div>
                   </div>
                   <button
                     onClick={handleSimulateScan}
@@ -299,7 +299,7 @@ export const AuthScreen: React.FC = () => {
             {/* Manual Form */}
             <form onSubmit={handleConnectMeter} className="space-y-3 text-xs">
               <div>
-                <label className="block text-neutral-400 mb-1 font-medium">
+                <label className="block text-neutral-600 dark:text-neutral-400 mb-1 font-medium">
                   Meter Hardware ID
                 </label>
                 <input
@@ -308,12 +308,12 @@ export const AuthScreen: React.FC = () => {
                   value={meterId}
                   onChange={e => setMeterId(e.target.value)}
                   placeholder="e.g. MTR-8A24-19F2"
-                  className="w-full p-3 rounded-xl bg-neutral-900 text-sm text-emerald-400 font-mono border border-neutral-800 focus:outline-none focus:border-emerald-500"
+                  className="w-full p-3 rounded-2xl bg-white dark:bg-neutral-900 text-sm text-[#ff5b26] font-mono border border-neutral-300 dark:border-neutral-800 focus:outline-none focus:border-[#ff5b26]"
                 />
               </div>
 
               <div>
-                <label className="block text-neutral-400 mb-1 font-medium">
+                <label className="block text-neutral-600 dark:text-neutral-400 mb-1 font-medium">
                   Friendly Property Name
                 </label>
                 <div className="relative">
@@ -324,7 +324,7 @@ export const AuthScreen: React.FC = () => {
                     value={meterName}
                     onChange={e => setMeterName(e.target.value)}
                     placeholder="e.g. My Home, Main House, Shop"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-neutral-900 text-sm text-neutral-100 border border-neutral-800 focus:outline-none focus:border-emerald-500"
+                    className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-neutral-900 text-sm text-neutral-900 dark:text-neutral-100 border border-neutral-300 dark:border-neutral-800 focus:outline-none focus:border-[#ff5b26]"
                   />
                 </div>
               </div>
@@ -336,7 +336,7 @@ export const AuthScreen: React.FC = () => {
                     type="button"
                     key={name}
                     onClick={() => setMeterName(name)}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white"
+                    className="text-[11px] px-2.5 py-1 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
                   >
                     {name}
                   </button>
@@ -373,33 +373,33 @@ export const AuthScreen: React.FC = () => {
       {step === 'meter_success' && (
         <div className="flex-1 flex flex-col justify-between py-12 text-center animate-fade-in">
           <div className="pt-8">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center mb-6 shadow-glow">
+            <div className="w-16 h-16 rounded-full bg-[#ff5b26]/15 text-[#ff5b26] mx-auto flex items-center justify-center mb-6 shadow-sm">
               <CheckCircle2 className="w-10 h-10" />
             </div>
 
-            <h2 className="text-3xl font-extrabold font-display text-white">
+            <h2 className="text-3xl font-extrabold font-display text-neutral-900 dark:text-white">
               Meter Connected!
             </h2>
-            <p className="text-xs text-neutral-400 mt-2 max-w-xs mx-auto">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 max-w-xs mx-auto">
               Your hardware has successfully established telemetry synchronization with the cloud backend.
             </p>
 
-            <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 max-w-xs mx-auto mt-6 text-left text-xs space-y-2">
+            <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 max-w-xs mx-auto mt-6 text-left text-xs space-y-2 shadow-sm">
               <div className="flex justify-between">
                 <span className="text-neutral-500">Device Name:</span>
-                <span className="font-bold text-neutral-200">{meterName}</span>
+                <span className="font-bold text-neutral-900 dark:text-neutral-200">{meterName}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">Meter ID:</span>
-                <span className="font-mono text-emerald-400">{meterId}</span>
+                <span className="font-mono text-[#ff5b26] font-bold">{meterId}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">Firmware:</span>
-                <span className="text-neutral-300">v1.0.4</span>
+                <span className="text-neutral-700 dark:text-neutral-300">v1.0.4</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">Cloud Link:</span>
-                <span className="text-emerald-400 font-semibold">Online & Synchronized</span>
+                <span className="text-[#ff5b26] font-semibold">Online & Synchronized</span>
               </div>
             </div>
           </div>

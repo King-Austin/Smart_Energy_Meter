@@ -70,12 +70,20 @@ export interface MeterTelemetry {
   battery_status: BatteryStatus;
   
   main_supply_connected: boolean;
+  is_tampered?: boolean;
   last_seen: string;
   firmware_version: string;
   
-  tariff_rate: number; // ₦/kWh (e.g. 150)
+  tariff_rate: number; // ₦/kWh (e.g. 68.5)
   currency_symbol: string; // ₦, $, €, £
   currency_code: string; // NGN, USD, EUR, GBP
+
+  // Real Hardware Protective Cutoff Thresholds
+  max_voltage_limit: number; // V (e.g. 250) - Trips contactor if exceeded
+  min_voltage_limit: number; // V (e.g. 180) - Brownout protection
+  bill_limit_threshold: number; // ₦ (e.g. 35,000) - Cutoff if monthly spend exceeded
+  voltage_cutoff_tripped: boolean;
+  bill_cutoff_tripped: boolean;
 }
 
 export interface SharingSession {
@@ -87,11 +95,11 @@ export interface SharingSession {
   direction: SharingDirection;
   status: SharingStatus;
   
-  power_limit_w: number; // e.g. 500
-  energy_limit_kwh: number; // e.g. 2.0
-  duration_limit_seconds: number; // e.g. 3600
+  energy_limit_kwh: number; // e.g. 2.0 (Energy Cap)
+  power_limit_w?: number; // Optional building load
+  duration_limit_seconds?: number; // Optional time cap
   
-  current_power_w: number; // e.g. 420
+  current_power_w: number; // Realtime live draw (W)
   energy_transferred_kwh: number; // e.g. 0.74
   elapsed_seconds: number; // e.g. 1920
   

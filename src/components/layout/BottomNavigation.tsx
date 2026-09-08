@@ -23,7 +23,7 @@ export const BottomNavigation: React.FC = () => {
   const isSharingActive = !!activeSession || !!receivingSession;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 max-w-[440px] mx-auto bg-white/90 dark:bg-[#0b0f17]/95 backdrop-blur-2xl border-t border-neutral-200/80 dark:border-neutral-800/80 px-2 py-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 max-w-[440px] mx-auto bg-white/95 dark:bg-[#0d1219]/95 backdrop-blur-2xl border-t border-slate-200/80 dark:border-neutral-800/80 px-2 py-2 shadow-sm">
       <div className="flex items-center justify-around">
         {TABS.map(tab => {
           const Icon = tab.icon;
@@ -36,13 +36,13 @@ export const BottomNavigation: React.FC = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`relative flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition-all duration-200 ${
                 isActive
-                  ? 'text-emerald-400 font-semibold'
-                  : 'text-neutral-400 hover:text-neutral-200'
+                  ? 'text-[#ff5b26] font-bold'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-200'
               }`}
             >
               {/* Active Highlight Background */}
               {isActive && (
-                <span className="absolute inset-0 bg-emerald-500/10 rounded-xl -z-10 animate-fade-in"></span>
+                <span className="absolute inset-0 bg-[#ff5b26]/12 dark:bg-[#ff5b26]/20 rounded-xl -z-10 animate-fade-in"></span>
               )}
 
               <div className="relative">
@@ -54,14 +54,14 @@ export const BottomNavigation: React.FC = () => {
                 
                 {/* Pulse badge if sharing is active */}
                 {hasShareBadge && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#ff5b26] animate-ping"></span>
                 )}
                 {hasShareBadge && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#ff5b26]"></span>
                 )}
               </div>
 
-              <span className="text-[10px] mt-1 tracking-tight">
+              <span className="text-[11px] mt-1 tracking-tight">
                 {tab.label}
               </span>
             </button>

@@ -11,7 +11,7 @@ export const LiveElectricalCard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+          <div className="p-1.5 rounded-xl bg-[#ff5b26]/10 text-[#ff5b26]">
             <Gauge className="w-4 h-4" />
           </div>
           <div>

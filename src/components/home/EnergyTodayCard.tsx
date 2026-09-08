@@ -10,14 +10,14 @@ export const EnergyTodayCard: React.FC = () => {
       {/* Energy Today Card */}
       <div
         onClick={() => setActiveTab('energy')}
-        className="glass-card p-4 flex flex-col justify-between cursor-pointer hover:border-emerald-500/30 transition-all group"
+        className="glass-card p-4 flex flex-col justify-between cursor-pointer hover:border-[#ff5b26]/30 transition-all group"
       >
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
               Energy Today
             </span>
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 opacity-80 group-hover:opacity-100" />
+            <Sparkles className="w-3.5 h-3.5 text-[#ff5b26] opacity-80 group-hover:opacity-100" />
           </div>
 
           <div className="flex items-baseline gap-1 my-1">
@@ -37,14 +37,14 @@ export const EnergyTodayCard: React.FC = () => {
       {/* Estimated Cost Today Card */}
       <div
         onClick={() => setActiveTab('energy')}
-        className="glass-card p-4 flex flex-col justify-between cursor-pointer hover:border-emerald-500/30 transition-all group"
+        className="glass-card p-4 flex flex-col justify-between cursor-pointer hover:border-[#ff5b26]/30 transition-all group"
       >
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
               Estimated Cost
             </span>
-            <DollarSign className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 opacity-80 group-hover:opacity-100" />
+            <DollarSign className="w-3.5 h-3.5 text-[#ff5b26] opacity-80 group-hover:opacity-100" />
           </div>
 
           <div className="flex items-baseline gap-0.5 my-1">

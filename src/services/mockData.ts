@@ -84,9 +84,16 @@ export const INITIAL_METER_DATA: MeterTelemetry = {
   last_seen: 'Just now',
   firmware_version: 'v1.0.4',
 
-  tariff_rate: 150,
+  tariff_rate: 68.5,
   currency_symbol: '₦',
-  currency_code: 'NGN'
+  currency_code: 'NGN',
+
+  // Protective safety cutoff limits
+  max_voltage_limit: 250.0,
+  min_voltage_limit: 180.0,
+  bill_limit_threshold: 35000.0,
+  voltage_cutoff_tripped: false,
+  bill_cutoff_tripped: false
 };
 
 export const REGISTERED_RECIPIENTS: RegisteredRecipient[] = [
