@@ -3,6 +3,7 @@ import { useMeter } from '../context/MeterContext';
 import { EnergyPeriod } from '../types/meter';
 import { HOURLY_DATA, WEEKLY_DATA, MONTHLY_DATA } from '../services/mockData';
 import { fetchHourlyUsageFromDB } from '../services/supabase';
+import { OutageHistoryCard } from '../components/energy/OutageHistoryCard';
 import {
   BarChart3,
   TrendingDown,
@@ -313,6 +314,9 @@ export const EnergyScreen: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Grid Blackout & Outage Forensics Card */}
+      <OutageHistoryCard />
 
     </div>
   );

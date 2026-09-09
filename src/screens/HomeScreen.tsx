@@ -5,29 +5,70 @@ import { CurrentPowerCard } from '../components/home/CurrentPowerCard';
 import { WalletCard } from '../components/wallet/WalletCard';
 import { EnergyTodayCard } from '../components/home/EnergyTodayCard';
 import { LiveElectricalCard } from '../components/home/LiveElectricalCard';
+import { BudgetSnapshotCard } from '../components/home/BudgetSnapshotCard';
+import { AIInsightsCard } from '../components/ai/AIInsightsCard';
 import {
   Zap,
-  Clock,
   ShieldCheck,
+  ShieldAlert,
   AlertTriangle,
   RotateCcw,
   ChevronRight,
   CheckCircle2,
-  Activity
+  Activity,
+  Building2
 } from 'lucide-react';
 
 export const HomeScreen: React.FC = () => {
-  const { setActiveTab, walletTransactions, meterData, resetSafetyCutoff } = useMeter();
+  const {
+    setActiveTab,
+    walletTransactions,
+    meterData,
+    resetSafetyCutoff,
+    setIsTamperModalOpen
+  } = useMeter();
 
   const isSafetyTripped = meterData.voltage_cutoff_tripped || meterData.bill_cutoff_tripped;
+  const isTampered = meterData.is_tampered || meterData.tamper_locked;
 
   return (
-    <div className="space-y-4 pb-10 animate-fade-in">
+    <div className="space-y-4 pb-12 animate-fade-in">
       
-      {/* 1. Primary Active Balance Hero Card */}
+      {/* 1. Tamper Alert Banner (High Priority) */}
+      {isTampered && (
+        <div className="rounded-2xl p-4 bg-red-500/15 border-2 border-red-500 text-red-700 dark:text-red-300 shadow-md animate-pulse">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-red-500 text-white shrink-0 mt-0.5">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-black uppercase tracking-tight">
+                SS-5GL Lid Tamper Interlock Engaged
+              </h4>
+              <p className="text-xs text-red-600 dark:text-red-300 mt-1 leading-relaxed">
+                Enclosure cover opened. Main power contactor is isolated for safety. Enter Admin PIN to inspect and restore supply.
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  onClick={() => setIsTamperModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Admin PIN Unlock & Forensics</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Primary Active Balance Hero Card */}
       <WalletCard />
 
-      {/* 2. Safety Trip Alert Banner (Shown when Voltage or Bill Cap is Tripped) */}
+      {/* 3. Monthly Budget Milestone Snapshot Card */}
+      <BudgetSnapshotCard />
+
+      {/* 4. Safety Trip Alert Banner (Overvoltage / Bill cap) */}
       {isSafetyTripped && (
         <div className="rounded-2xl p-4 bg-rose-500/10 border-2 border-rose-500 text-rose-700 dark:text-rose-300 shadow-md animate-bounce-short">
           <div className="flex items-start gap-3">
@@ -38,7 +79,7 @@ export const HomeScreen: React.FC = () => {
               <h4 className="text-sm font-black uppercase tracking-tight">
                 {meterData.voltage_cutoff_tripped
                   ? `Overvoltage Protection Tripped (${meterData.voltage.toFixed(1)}V > ${meterData.max_voltage_limit}V)`
-                  : `Monthly Budget Limit Exceeded (₦${meterData.estimated_cost_today.toLocaleString()} > ₦${meterData.bill_limit_threshold.toLocaleString()})`}
+                  : `Monthly Spend Threshold Exceeded (₦${meterData.estimated_cost_today.toLocaleString()} > ₦${meterData.bill_limit_threshold.toLocaleString()})`}
               </h4>
               <p className="text-xs text-rose-600 dark:text-rose-300 mt-1 leading-relaxed">
                 The safety contactor automatically disconnected the supply to protect your building appliances.
@@ -63,7 +104,7 @@ export const HomeScreen: React.FC = () => {
         </div>
       )}
 
-      {/* 3. Quick Action 3-Card Grid */}
+      {/* 5. Quick Action Grid */}
       <div className="grid grid-cols-3 gap-2.5">
         <button
           onClick={() => setActiveTab('wallet')}
@@ -81,47 +122,47 @@ export const HomeScreen: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('energy')}
-          className="glass-card p-3 flex flex-col items-center justify-center text-center group hover:border-slate-300 dark:hover:border-neutral-700 transition-all"
+          onClick={() => setActiveTab('admin')}
+          className="glass-card p-3 flex flex-col items-center justify-center text-center group hover:border-cyan-500/50 transition-all"
         >
-          <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
-            <Clock className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-500 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+            <Building2 className="w-5 h-5" />
           </div>
           <span className="text-xs font-bold text-slate-800 dark:text-neutral-200">
-            View Usage
+            Fleet Admin
           </span>
           <span className="text-[10px] text-slate-500 dark:text-neutral-400">
-            Analytics
+            Multi-Meter
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab('settings')}
           className={`glass-card p-3 flex flex-col items-center justify-center text-center group transition-all ${
-            isSafetyTripped
+            isSafetyTripped || isTampered
               ? 'border-rose-500/40 bg-rose-500/5'
               : 'hover:border-slate-300 dark:hover:border-neutral-700'
           }`}
         >
           <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform ${
-            isSafetyTripped
+            isSafetyTripped || isTampered
               ? 'bg-rose-500/15 text-rose-600'
               : 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400'
           }`}>
-            {isSafetyTripped ? <AlertTriangle className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+            {isSafetyTripped || isTampered ? <AlertTriangle className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
           </div>
           <span className="text-xs font-bold text-slate-800 dark:text-neutral-200">
-            Safety Cutoffs
+            Safety Limits
           </span>
           <span className={`text-[10px] font-bold ${
-            isSafetyTripped ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400'
+            isSafetyTripped || isTampered ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400'
           }`}>
-            {isSafetyTripped ? 'Tripped' : 'Protected'}
+            {isTampered ? 'Tampered' : isSafetyTripped ? 'Tripped' : 'Protected'}
           </span>
         </button>
       </div>
 
-      {/* 4. Real Protective Cutoff Status Bar */}
+      {/* 6. Real Protective Cutoff Status Bar */}
       <div className="p-3 rounded-2xl bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-[#ff5b26]" />
@@ -129,36 +170,37 @@ export const HomeScreen: React.FC = () => {
             Active Guard Limits
           </span>
         </div>
-        <div className="flex items-center gap-3 text-[11px] font-mono text-slate-600 dark:text-neutral-400">
+        <div className="flex items-center gap-2 text-[11px] font-mono text-slate-600 dark:text-neutral-400">
           <span className="bg-slate-200 dark:bg-neutral-800 px-2 py-0.5 rounded-md font-bold">
             Max {meterData.max_voltage_limit}V
           </span>
           <span className="bg-slate-200 dark:bg-neutral-800 px-2 py-0.5 rounded-md font-bold">
-            Cap ₦{meterData.bill_limit_threshold.toLocaleString()}
+            Limit {meterData.over_current_limit || 30}A
           </span>
         </div>
       </div>
 
-      {/* 5. Live Power Gauge (Instant hardware reading) */}
+      {/* 7. Live Instant Power Gauge (PZEM digital reading) */}
       <CurrentPowerCard />
 
-      {/* 6. Live Power Distribution Topology (Grid Synced) */}
+      {/* 8. Live Power Distribution Topology */}
       <EnergyFlowDiagram />
 
-      {/* 7. Today's Energy & Cost Breakdown */}
+      {/* 9. Today's Energy & Naira Cost Breakdown */}
       <EnergyTodayCard />
 
-      {/* 8. Grid & Hardware Live Electrical Parameters */}
+      {/* 10. PZEM Live Electrical Telemetry (V, I, PF, Hz, kVA, kVAR) */}
       <LiveElectricalCard />
 
-      {/* 9. Recent Purchase & Activity Ledger */}
+      {/* 11. AI Energy Intelligence & Recommendations */}
+      <AIInsightsCard />
+
+      {/* 12. Recent Purchase Ledger */}
       <div className="glass-card p-4">
         <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-neutral-400">
-              Purchase History
-            </h3>
-          </div>
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-neutral-400">
+            Recent Purchases & Tokens
+          </h3>
 
           <button
             onClick={() => setActiveTab('wallet')}
@@ -170,7 +212,7 @@ export const HomeScreen: React.FC = () => {
         </div>
 
         <div className="space-y-2.5">
-          {walletTransactions.slice(0, 3).map(tx => (
+          {walletTransactions.slice(0, 2).map(tx => (
             <div
               key={tx.id}
               className="p-3 rounded-2xl bg-slate-50 dark:bg-neutral-900/70 border border-slate-200/80 dark:border-neutral-800/80 flex items-center justify-between text-xs"
@@ -181,7 +223,7 @@ export const HomeScreen: React.FC = () => {
                 </div>
                 <div>
                   <span className="font-bold text-slate-900 dark:text-white block">
-                    {tx.title || 'Ikeja Electric (Prepaid)'}
+                    {tx.title || 'Prepaid Energy Units'}
                   </span>
                   <span className="text-[11px] text-slate-500 dark:text-neutral-400">
                     {tx.timestamp}

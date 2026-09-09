@@ -36,11 +36,13 @@ export interface WalletTransaction {
 export interface MeterTelemetry {
   meter_id: string;
   meter_name: string;
+  location?: string;
+  building_id?: string;
   user_id: string;
-  voltage: number; // V (e.g. 231)
-  current: number; // A (e.g. 10.7)
-  active_power: number; // kW (e.g. 2.46)
-  power_factor: number; // (e.g. 0.96)
+  voltage: number; // V (e.g. 231.4)
+  current: number; // A (e.g. 6.8)
+  active_power: number; // kW (e.g. 1.54)
+  power_factor: number; // (e.g. 0.98)
   frequency: number; // Hz (e.g. 50.0)
   apparent_power: number; // kVA
   reactive_power: number; // kVAR
@@ -58,9 +60,9 @@ export interface MeterTelemetry {
   energy_month: number; // kWh (e.g. 214.6)
   projected_month: number; // kWh (e.g. 246)
   
-  estimated_cost_today: number; // e.g. 1263
-  estimated_bill_month: number; // e.g. 32190
-  projected_bill_month: number; // e.g. 36900
+  estimated_cost_today: number; // e.g. 1263 (₦)
+  estimated_bill_month: number; // e.g. 32190 (₦)
+  projected_bill_month: number; // e.g. 36900 (₦)
   
   grid_status: GridStatus;
   device_status: DeviceStatus;
@@ -71,6 +73,7 @@ export interface MeterTelemetry {
   
   main_supply_connected: boolean;
   is_tampered?: boolean;
+  tamper_locked?: boolean;
   last_seen: string;
   firmware_version: string;
   
@@ -81,9 +84,104 @@ export interface MeterTelemetry {
   // Real Hardware Protective Cutoff Thresholds
   max_voltage_limit: number; // V (e.g. 250) - Trips contactor if exceeded
   min_voltage_limit: number; // V (e.g. 180) - Brownout protection
-  bill_limit_threshold: number; // ₦ (e.g. 35,000) - Cutoff if monthly spend exceeded
+  over_current_limit: number; // A (e.g. 30.0) - Over-current cutoff
+  monthly_budget_naira: number; // ₦ (e.g. 25,000)
+  monthly_budget_kwh: number; // kWh (e.g. 365)
+  budget_alert_tiers?: {
+    50: boolean;
+    80: boolean;
+    90: boolean;
+    100: boolean;
+  };
+  bill_limit_threshold: number; // ₦
   voltage_cutoff_tripped: boolean;
   bill_cutoff_tripped: boolean;
+  current_cutoff_tripped?: boolean;
+
+  // Diagnostics
+  wifi_rssi?: number;
+  free_heap_bytes?: number;
+  uptime_seconds?: number;
+  battery_mv?: number;
+  ota_url?: string;
+  ota_version?: string;
+}
+
+export interface MeterSummary {
+  meter_id: string;
+  meter_name: string;
+  location: string;
+  building_id: string;
+  user_id: string;
+  voltage: number;
+  current: number;
+  active_power: number;
+  power_factor: number;
+  frequency: number;
+  tariff_rate: number;
+  monthly_budget_naira: number;
+  monthly_budget_kwh: number;
+  over_current_limit: number;
+  energy_today: number;
+  energy_month: number;
+  grid_status: GridStatus;
+  device_status: DeviceStatus;
+  main_supply_connected: boolean;
+  is_tampered: boolean;
+  tamper_locked: boolean;
+  wifi_rssi?: number;
+  battery_percentage?: number;
+  last_seen: string;
+}
+
+export interface TamperEvent {
+  id: string;
+  meter_id: string;
+  event_type: string;
+  description: string;
+  created_at: string;
+  resolved: boolean;
+  resolved_by?: string;
+  resolved_at?: string;
+}
+
+export interface OutageLog {
+  id: string;
+  meter_id: string;
+  outage_start: string;
+  outage_end?: string;
+  duration_seconds?: number;
+  cause: string;
+}
+
+export interface BudgetSettings {
+  tariff_rate: number;
+  monthly_budget_naira: number;
+  monthly_budget_kwh: number;
+  over_current_limit: number;
+  max_voltage_limit: number;
+  min_voltage_limit: number;
+}
+
+export interface FleetKPIs {
+  totalMeters: number;
+  onlineMeters: number;
+  totalFacilityLoadKw: number;
+  totalFacilityEnergyTodayKwh: number;
+  totalRevenueTodayNaira: number;
+  activeTampersCount: number;
+  blackoutCount: number;
+}
+
+export interface AIInsightReport {
+  predictedMonthKwh: number;
+  predictedMonthCostNaira: number;
+  dailyAverageKwh: number;
+  peakUsagePeriod: string;
+  anomalyStatus: 'normal' | 'caution' | 'abnormal';
+  anomalyDescription: string;
+  tamperRiskScore: number; // 0 - 100%
+  energySavingTips: string[];
 }
 
 export interface SharingSession {
@@ -144,9 +242,10 @@ export interface NotificationItem {
   title: string;
   message: string;
   timestamp: string;
-  type: 'outage' | 'restored' | 'warning' | 'sharing' | 'system' | 'offline' | 'wallet';
+  type: 'outage' | 'restored' | 'warning' | 'sharing' | 'system' | 'offline' | 'wallet' | 'tamper' | 'budget';
   is_read: boolean;
+  meter_id?: string;
 }
 
-export type ActiveTab = 'home' | 'energy' | 'wallet' | 'share' | 'settings' | 'device' | 'auth';
-export type EnergyPeriod = 'today' | 'week' | 'month';
+export type ActiveTab = 'home' | 'energy' | 'admin' | 'wallet' | 'share' | 'settings' | 'device' | 'auth';
+export type EnergyPeriod = 'today' | 'daily' | 'week' | 'month';

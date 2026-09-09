@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMeter } from '../../context/MeterContext';
 import { ActiveTab } from '../../types/meter';
-import { Zap, BarChart3, Wallet, Share2, Settings } from 'lucide-react';
+import { Zap, BarChart3, Wallet, Share2, Settings, Building2 } from 'lucide-react';
 
 interface TabItem {
   id: ActiveTab;
@@ -12,6 +12,7 @@ interface TabItem {
 const TABS: TabItem[] = [
   { id: 'home', label: 'Home', icon: Zap },
   { id: 'energy', label: 'Energy', icon: BarChart3 },
+  { id: 'admin', label: 'Fleet', icon: Building2 },
   { id: 'wallet', label: 'Wallet', icon: Wallet },
   { id: 'share', label: 'Share', icon: Share2 },
   { id: 'settings', label: 'Settings', icon: Settings }

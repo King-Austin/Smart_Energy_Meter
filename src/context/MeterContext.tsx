@@ -1,16 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import {
   MeterTelemetry,
+  MeterSummary,
+  TamperEvent,
+  OutageLog,
   SharingSession,
   RegisteredRecipient,
   NotificationItem,
   ActiveTab,
   GridStatus,
-  DeviceStatus,
   WalletTransaction
 } from '../types/meter';
 import {
   INITIAL_METER_DATA,
+  INITIAL_FLEET_METERS,
   REGISTERED_RECIPIENTS,
   INITIAL_SHARING_HISTORY,
   INITIAL_NOTIFICATIONS,
@@ -19,18 +22,62 @@ import {
 import { apiService } from '../services/api';
 import {
   fetchLiveMeterFromSupabase,
+  fetchFleetMeters,
   subscribeToMeterUpdates,
+  subscribeToFleetUpdates,
   subscribeToTelemetryLogs,
   toggleRemoteSupplyRelay,
   fetchSupabaseTransactions,
   fetchSupabaseRecipients,
   isSupabaseConfigured,
   updateProtectionSettings,
-  recordPaystackTransaction
+  recordPaystackTransaction,
+  fetchTamperEvents,
+  fetchOutageHistory,
+  adminSetRelay,
+  adminClearTamper,
+  adminUpdateMeterConfig,
+  adminBulkSetTariff
 } from '../services/supabase';
 
 interface MeterContextType {
   meterData: MeterTelemetry;
+  fleetMeters: MeterSummary[];
+  selectedMeterId: string;
+  switchMeter: (meterId: string) => Promise<void>;
+  refreshFleet: () => Promise<void>;
+
+  // Role-Based Access Control (Admin vs Consumer)
+  userRole: 'admin' | 'consumer';
+  setUserRole: (role: 'admin' | 'consumer') => void;
+  isAdminUnlocked: boolean;
+  verifyAdminPin: (pin: string) => boolean;
+  lockAdmin: () => void;
+
+  // Forensics & Modals
+  tamperEvents: TamperEvent[];
+  outageLogs: OutageLog[];
+  isTamperModalOpen: boolean;
+  setIsTamperModalOpen: (open: boolean) => void;
+  isAIAssistantOpen: boolean;
+  setIsAIAssistantOpen: (open: boolean) => void;
+
+  // Budget & Projections
+  budgetProgressPct: number;
+  projectedMonthKwh: number;
+  projectedMonthCostNaira: number;
+
+  // Admin Actions
+  handleAdminSetRelay: (meterId: string, state: boolean, pin: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  handleAdminClearTamper: (meterId: string, pin: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  handleAdminUpdateConfig: (
+    meterId: string,
+    config: { tariff?: number; budgetNaira?: number; budgetKwh?: number; overCurrent?: number },
+    pin: string
+  ) => Promise<{ success: boolean; message?: string; error?: string }>;
+  handleAdminBulkTariff: (meterIds: string[], newTariff: number, pin: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+
+  // Consumer & Session State
   activeSession: SharingSession | null;
   receivingSession: SharingSession | null;
   sharingHistory: SharingSession[];
@@ -68,7 +115,7 @@ interface MeterContextType {
   login: (meterName?: string, meterId?: string) => void;
   logout: () => void;
 
-  // Sharing (Streamlined for Building Independence)
+  // Sharing (Cloud Synchronized)
   startSharing: (
     recipient: RegisteredRecipient,
     energyLimitKwh: number,
@@ -99,7 +146,22 @@ interface MeterContextType {
 const MeterContext = createContext<MeterContextType | undefined>(undefined);
 
 export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Multi-Meter Fleet State
+  const [fleetMeters, setFleetMeters] = useState<MeterSummary[]>(INITIAL_FLEET_METERS);
+  const [selectedMeterId, setSelectedMeterId] = useState<string>('MTR-8A24-19F2');
   const [meterData, setMeterData] = useState<MeterTelemetry>(INITIAL_METER_DATA);
+
+  // Role-Based Access Control
+  const [userRole, setUserRole] = useState<'admin' | 'consumer'>('consumer');
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(false);
+
+  // Forensics & Modals
+  const [tamperEvents, setTamperEvents] = useState<TamperEvent[]>([]);
+  const [outageLogs, setOutageLogs] = useState<OutageLog[]>([]);
+  const [isTamperModalOpen, setIsTamperModalOpen] = useState<boolean>(false);
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState<boolean>(false);
+
+  // Standard Meter App State
   const [activeSession, setActiveSession] = useState<SharingSession | null>(null);
   const [receivingSession, setReceivingSession] = useState<SharingSession | null>(null);
   const [sharingHistory, setSharingHistory] = useState<SharingSession[]>(INITIAL_SHARING_HISTORY);
@@ -107,90 +169,197 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>(INITIAL_WALLET_TRANSACTIONS);
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [isSimPanelOpen, setIsSimPanelOpen] = useState<boolean>(false);
 
-  const lastUserToggleTimeRef = useRef<number>(0);
-
-  // Endpoint configuration
-  const [apiEndpointUrl, setApiEndpointUrlState] = useState<string>(
-    window.location.origin + '/api'
-  );
+  // Backend / Endpoint State
+  const [apiEndpointUrl, setApiEndpointUrl] = useState<string>('https://kmosslvdjdhrjgvitctr.supabase.co');
   const [isLiveEndpointActive, setIsLiveEndpointActive] = useState<boolean>(false);
 
-  const setApiEndpointUrl = (url: string) => {
-    setApiEndpointUrlState(url);
-    apiService.setBaseUrl(url);
-  };
+  // Budget Milestone alert tracker (prevents repeated alerts in the same session)
+  const sentAlertTiersRef = useRef<{ [tier: string]: boolean }>({});
 
-  const pingBackend = async (url?: string) => {
-    if (url) apiService.setBaseUrl(url);
-    return apiService.ping();
-  };
-
-  // Apply theme to document
+  // Theme Sync
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    const root = document.documentElement;
     if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
     }
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  // Sync with Supabase: Fetch live meter data and subscribe to 5-second hardware updates
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
+  const addNotification = useCallback((title: string, message: string, type: NotificationItem['type']) => {
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      title,
+      message,
+      timestamp: 'Just now',
+      type,
+      is_read: false
+    };
+    setNotifications(prev => [newNotif, ...prev]);
 
-    let isMounted = true;
-    async function initSupabase() {
+    // Optional Browser Web Notification
+    if ('Notification' in window && Notification.permission === 'granted') {
       try {
-        const [remoteMeter, remoteTxns, remoteRecipients] = await Promise.all([
-          fetchLiveMeterFromSupabase(meterData.meter_id),
-          fetchSupabaseTransactions(meterData.meter_id),
+        new Notification(title, { body: message, icon: '/favicon.ico' });
+      } catch (e) {
+        // Notification API fallback
+      }
+    }
+  }, []);
+
+  // Admin PIN verification
+  const verifyAdminPin = (pin: string): boolean => {
+    if (pin === '1234') {
+      setIsAdminUnlocked(true);
+      return true;
+    }
+    return false;
+  };
+
+  const lockAdmin = () => {
+    setIsAdminUnlocked(false);
+  };
+
+  // 1. Fetch Fleet and Initial Data from Supabase
+  const refreshFleet = useCallback(async () => {
+    if (!isSupabaseConfigured()) return;
+    const fleet = await fetchFleetMeters();
+    if (fleet && fleet.length > 0) {
+      setFleetMeters(fleet);
+    }
+  }, []);
+
+  const loadTamperAndOutages = useCallback(async (meterId: string) => {
+    if (!isSupabaseConfigured()) return;
+    const [tEvents, oLogs] = await Promise.all([
+      fetchTamperEvents(meterId),
+      fetchOutageHistory(meterId)
+    ]);
+    if (tEvents) setTamperEvents(tEvents);
+    if (oLogs) setOutageLogs(oLogs);
+  }, []);
+
+  // 2. Switch active submeter
+  const switchMeter = async (meterId: string) => {
+    setSelectedMeterId(meterId);
+    sentAlertTiersRef.current = {};
+
+    if (isSupabaseConfigured()) {
+      const live = await fetchLiveMeterFromSupabase(meterId);
+      if (live) {
+        setMeterData(live);
+      } else {
+        const found = fleetMeters.find(m => m.meter_id === meterId);
+        if (found) {
+          setMeterData(prev => ({
+            ...prev,
+            meter_id: found.meter_id,
+            meter_name: found.meter_name,
+            location: found.location,
+            voltage: found.voltage,
+            current: found.current,
+            active_power: found.active_power,
+            tariff_rate: found.tariff_rate,
+            monthly_budget_naira: found.monthly_budget_naira,
+            monthly_budget_kwh: found.monthly_budget_kwh,
+            main_supply_connected: found.main_supply_connected,
+            is_tampered: found.is_tampered,
+            tamper_locked: found.tamper_locked
+          }));
+        }
+      }
+      await loadTamperAndOutages(meterId);
+    }
+  };
+
+  // 3. Initial Boot & Subscriptions
+  useEffect(() => {
+    let isMounted = true;
+
+    const initData = async () => {
+      if (isSupabaseConfigured()) {
+        const [liveMeter, fleet, txs, rcpts] = await Promise.all([
+          fetchLiveMeterFromSupabase(selectedMeterId),
+          fetchFleetMeters(),
+          fetchSupabaseTransactions(selectedMeterId),
           fetchSupabaseRecipients()
         ]);
 
-        if (!isMounted) return;
-        if (remoteMeter) {
-          setMeterData(prev => ({ ...prev, ...remoteMeter }));
+        if (isMounted) {
+          if (liveMeter) setMeterData(liveMeter);
+          if (fleet && fleet.length > 0) setFleetMeters(fleet);
+          if (txs && txs.length > 0) setWalletTransactions(txs);
+          if (rcpts && rcpts.length > 0) setRecipients(rcpts);
         }
-        if (remoteTxns && remoteTxns.length > 0) {
-          setWalletTransactions(remoteTxns);
-        }
-        if (remoteRecipients && remoteRecipients.length > 0) {
-          setRecipients(remoteRecipients);
-        }
-      } catch (err) {
-        console.warn('[Supabase] Initial connection notice:', err);
+        await loadTamperAndOutages(selectedMeterId);
       }
-    }
+    };
 
-    initSupabase();
+    initData();
 
-    // Subscribe to real-time changes emitted by ESP32 or simulate_monitoring.js
-    const meterChannel = subscribeToMeterUpdates(meterData.meter_id, (updated) => {
-      if (!isMounted) return;
-      setMeterData(prev => {
-        // Prevent in-flight telemetry updates from overriding an active user toggle!
-        const isUserToggling = Date.now() - lastUserToggleTimeRef.current < 4000;
-        return {
-          ...prev,
-          ...updated,
-          main_supply_connected: isUserToggling 
-            ? prev.main_supply_connected 
-            : (updated.main_supply_connected ?? prev.main_supply_connected)
-        };
-      });
+    // Subscribe to Fleet changes
+    const fleetChannel = subscribeToFleetUpdates(() => {
+      refreshFleet();
     });
 
-    const logsChannel = subscribeToTelemetryLogs(meterData.meter_id, (newLog) => {
-      if (!isMounted) return;
+    return () => {
+      isMounted = false;
+      fleetChannel.unsubscribe();
+    };
+  }, [refreshFleet, loadTamperAndOutages, selectedMeterId]);
+
+  // 4. Real-time Subscription for selected meter
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    const meterChannel = subscribeToMeterUpdates(selectedMeterId, (updated) => {
+      setMeterData(prev => ({
+        ...prev,
+        ...updated,
+        // Preserve local properties if remote payload doesn't provide them
+        currency_symbol: prev.currency_symbol,
+        currency_code: prev.currency_code
+      }));
+
+      // Update in fleet list as well
+      setFleetMeters(prev => prev.map(m => m.meter_id === updated.meter_id ? { ...m, ...updated } : m));
+
+      // Trigger high-priority notifications on state transitions
+      if (updated.is_tampered && !meterData.is_tampered) {
+        addNotification(
+          'TAMPER BREACH DETECTED',
+          `SS-5GL enclosure lid switch triggered on ${updated.meter_name} (${updated.meter_id}). Power isolated!`,
+          'tamper'
+        );
+        loadTamperAndOutages(selectedMeterId);
+      }
+
+      if (updated.grid_status === 'offline' && meterData.grid_status === 'online') {
+        addNotification(
+          'GRID BLACKOUT DETECTED',
+          `Mains supply dropped to 0V. Submeter ${updated.meter_id} is running on internal backup battery.`,
+          'outage'
+        );
+        loadTamperAndOutages(selectedMeterId);
+      } else if (updated.grid_status === 'online' && meterData.grid_status === 'offline') {
+        addNotification(
+          'GRID POWER RESTORED',
+          `Mains voltage recovered (${updated.voltage}V). Contactor re-energized.`,
+          'restored'
+        );
+        loadTamperAndOutages(selectedMeterId);
+      }
+    });
+
+    const logsChannel = subscribeToTelemetryLogs(selectedMeterId, (newLog) => {
       setMeterData(prev => ({
         ...prev,
         voltage: Number(newLog.voltage ?? prev.voltage),
@@ -204,23 +373,116 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
 
     return () => {
-      isMounted = false;
       meterChannel.unsubscribe();
       logsChannel.unsubscribe();
     };
-  }, [meterData.meter_id]);
+  }, [selectedMeterId, meterData.is_tampered, meterData.grid_status, addNotification, loadTamperAndOutages]);
 
-  const addNotification = useCallback((title: string, message: string, type: NotificationItem['type']) => {
-    const newNotif: NotificationItem = {
-      id: `notif-${Date.now()}`,
-      title,
-      message,
-      timestamp: 'Just now',
-      type,
-      is_read: false
+  // 5. Budget Progress & Month-End Run-Rate Projections
+  const dayOfMonth = Math.max(1, new Date().getDate());
+  const daysInMonth = 30;
+  const currentMonthSpent = meterData.estimated_bill_month || (meterData.energy_today * meterData.tariff_rate * dayOfMonth);
+  const budgetLimit = meterData.monthly_budget_naira || 25000;
+  const budgetProgressPct = Math.min(100, Math.round((currentMonthSpent / budgetLimit) * 100));
+
+  // Run-rate projections
+  const dailyAvgKwh = (meterData.energy_month || (meterData.energy_today * dayOfMonth * 0.8)) / dayOfMonth;
+  const projectedMonthKwh = Math.round(dailyAvgKwh * daysInMonth);
+  const projectedMonthCostNaira = Math.round(projectedMonthKwh * (meterData.tariff_rate || 68.5));
+
+  // 6. Proactive Budget Milestone Alerts (50%, 80%, 90%, 100%)
+  useEffect(() => {
+    const checkMilestone = (tier: number) => {
+      if (budgetProgressPct >= tier && !sentAlertTiersRef.current[tier]) {
+        sentAlertTiersRef.current[tier] = true;
+        addNotification(
+          `Monthly Budget Alert: ${tier}% Reached`,
+          `You have consumed ₦${currentMonthSpent.toLocaleString()} of your ₦${budgetLimit.toLocaleString()} limit (${tier}%). Projected month-end: ₦${projectedMonthCostNaira.toLocaleString()}.`,
+          'budget'
+        );
+      }
     };
-    setNotifications(prev => [newNotif, ...prev]);
-  }, []);
+
+    checkMilestone(50);
+    checkMilestone(80);
+    checkMilestone(90);
+    checkMilestone(100);
+  }, [budgetProgressPct, currentMonthSpent, budgetLimit, projectedMonthCostNaira, addNotification]);
+
+  // 7. Admin Action Handlers
+  const handleAdminSetRelay = async (meterId: string, state: boolean, pin: string) => {
+    const res = await adminSetRelay(meterId, state, pin);
+    if (res.success) {
+      addNotification(
+        'Admin Contactor Control',
+        `Submeter ${meterId} contactor ${state ? 'CONNECTED' : 'DISCONNECTED'}.`,
+        'system'
+      );
+      await refreshFleet();
+      if (meterId === selectedMeterId) {
+        setMeterData(prev => ({ ...prev, main_supply_connected: state }));
+      }
+    }
+    return res;
+  };
+
+  const handleAdminClearTamper = async (meterId: string, pin: string) => {
+    const res = await adminClearTamper(meterId, pin);
+    if (res.success) {
+      addNotification(
+        'Tamper Cleared',
+        `Tamper lock cleared on submeter ${meterId}. Main power supply contactor restored.`,
+        'restored'
+      );
+      await refreshFleet();
+      await loadTamperAndOutages(meterId);
+      if (meterId === selectedMeterId) {
+        setMeterData(prev => ({
+          ...prev,
+          is_tampered: false,
+          tamper_locked: false,
+          main_supply_connected: true
+        }));
+      }
+    }
+    return res;
+  };
+
+  const handleAdminUpdateConfig = async (
+    meterId: string,
+    config: { tariff?: number; budgetNaira?: number; budgetKwh?: number; overCurrent?: number },
+    pin: string
+  ) => {
+    const res = await adminUpdateMeterConfig(meterId, config, pin);
+    if (res.success) {
+      addNotification(
+        'Configuration Saved',
+        `Updated settings for submeter ${meterId}.`,
+        'system'
+      );
+      await refreshFleet();
+      if (meterId === selectedMeterId) {
+        setMeterData(prev => ({
+          ...prev,
+          tariff_rate: config.tariff ?? prev.tariff_rate,
+          monthly_budget_naira: config.budgetNaira ?? prev.monthly_budget_naira,
+          monthly_budget_kwh: config.budgetKwh ?? prev.monthly_budget_kwh,
+          over_current_limit: config.overCurrent ?? prev.over_current_limit
+        }));
+      }
+    }
+    return res;
+  };
+
+  const handleAdminBulkTariff = async (meterIds: string[], newTariff: number, pin: string) => {
+    const res = await adminBulkSetTariff(meterIds, newTariff, pin);
+    if (res.success) {
+      addNotification('Bulk Tariff Updated', res.message || 'Updated tariff across fleet.', 'system');
+      await refreshFleet();
+      setMeterData(prev => ({ ...prev, tariff_rate: newTariff }));
+    }
+    return res;
+  };
 
   // Wallet Funding Actions
   const fundWallet = (amount: number, method: string, token: string) => {
@@ -257,12 +519,11 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
   };
 
-  // Paystack Funding with Real STS 20-digit token generation and Supabase sync
+  // Paystack Funding with Real STS 20-digit token generation
   const fundWalletWithPaystack = async (amount: number): Promise<{ success: boolean; token: string; units: number; error?: string }> => {
     const tariff = meterData.tariff_rate > 0 ? meterData.tariff_rate : 68.5;
     const units = Number((amount / tariff).toFixed(1));
     
-    // Standard Transfer Specification (STS) 20-digit token: 5 blocks of 4 digits
     const p1 = Math.floor(1000 + Math.random() * 9000);
     const p2 = Math.floor(1000 + Math.random() * 9000);
     const p3 = Math.floor(1000 + Math.random() * 9000);
@@ -270,7 +531,6 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const p5 = Math.floor(1000 + Math.random() * 9000);
     const stsToken = `${p1}-${p2}-${p3}-${p4}-${p5}`;
 
-    // Persist to Supabase
     await recordPaystackTransaction(meterData.meter_id, amount, units, stsToken);
 
     const newTx: WalletTransaction = {
@@ -325,7 +585,7 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         main_supply_connected: true,
         voltage_cutoff_tripped: false,
         bill_cutoff_tripped: false,
-        active_power: 2.46
+        active_power: 1.54
       };
     });
   };
@@ -351,403 +611,145 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
   };
 
-  // Live Telemetry Sync Engine
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      // 1. If Supabase is configured and meter is online, sync real telemetry directly from Supabase!
-      if (isSupabaseConfigured() && meterData.device_status !== 'offline') {
-        try {
-          const remoteMeter = await fetchLiveMeterFromSupabase(meterData.meter_id);
-          if (remoteMeter) {
-            setMeterData(prev => ({
-              ...prev,
-              ...remoteMeter
-            }));
-          }
-        } catch (err) {
-          console.warn('[Supabase] Telemetry sync error:', err);
-        }
-        return;
-      }
+  const pingBackend = async (targetUrl?: string) => {
+    const url = targetUrl || apiEndpointUrl;
+    if (url) {
+      apiService.setBaseUrl(url);
+    }
+    const start = performance.now();
+    try {
+      const res = await apiService.ping();
+      const latency = Math.round(performance.now() - start);
+      return { success: res.success, latencyMs: latency, error: res.error };
+    } catch (err: any) {
+      return { success: false, latencyMs: 0, error: err?.message || 'Network unreachable' };
+    }
+  };
 
-      // 2. If in Live API Mode, fetch real telemetry from configured endpoint
-      if (isLiveEndpointActive) {
-        try {
-          const liveData = await apiService.getLiveTelemetry(meterData.meter_id);
-          if (liveData) {
-            setMeterData(prev => ({
-              ...prev,
-              ...liveData
-            }));
-          }
-
-          const activeSharingData = await apiService.getActiveSharing();
-          if (activeSharingData) {
-            setActiveSession(activeSharingData.activeSession);
-            setReceivingSession(activeSharingData.receivingSession);
-          }
-        } catch (err) {
-          console.warn('Live API poll warning:', err);
-        }
-        return;
-      }
-
-      // 3. Otherwise run internal high-fidelity simulation engine (offline fallback only)
-      setMeterData(prev => {
-        if (prev.device_status === 'offline') {
-          return prev;
-        }
-
-        // Voltage variation
-        const jitterVoltage = (Math.random() * 3 - 1.5);
-        const newVoltage = Number((231.0 + jitterVoltage).toFixed(1));
-
-        // Protective Overvoltage & Brownout Threshold Cutoff
-        let isVoltageTripped = prev.voltage_cutoff_tripped;
-        let isBillTripped = prev.bill_cutoff_tripped;
-        let relayConnected = prev.main_supply_connected;
-
-        if (newVoltage > prev.max_voltage_limit || newVoltage < prev.min_voltage_limit) {
-          if (relayConnected && !isVoltageTripped) {
-            isVoltageTripped = true;
-            relayConnected = false;
-            addNotification(
-              'Overvoltage Cutoff Tripped',
-              `Line voltage reached ${newVoltage}V (limit: ${prev.max_voltage_limit}V). Contactor opened to protect appliances.`,
-              'warning'
-            );
-          }
-        }
-
-        // Base power variation
-        const jitterPower = (Math.random() * 0.16 - 0.08);
-        const basePower = relayConnected && !isVoltageTripped && !isBillTripped ? 2.46 : 0.0;
-        const newActivePower = basePower > 0 ? Math.max(0.1, Number((basePower + jitterPower).toFixed(2))) : 0.0;
-
-        // Power factor
-        const newPf = Number((0.95 + (Math.random() * 0.03 - 0.015)).toFixed(2));
-
-        // Current I = (P_kW * 1000) / (V * PF)
-        const newCurrent = newActivePower > 0 ? Number(((newActivePower * 1000) / (newVoltage * newPf)).toFixed(1)) : 0.0;
-
-        // Battery handling during outage
-        let newBattery = prev.battery_percentage;
-        let newBatteryStatus = prev.battery_status;
-        if (prev.grid_status === 'offline') {
-          newBattery = Math.max(1, prev.battery_percentage - 0.05);
-          newBatteryStatus = newBattery < 20 ? 'low' : 'battery';
-        } else if (prev.battery_percentage < 100) {
-          newBattery = Math.min(100, prev.battery_percentage + 0.1);
-          newBatteryStatus = 'charging';
-        }
-
-        // Incremental energy accumulation
-        const energyIncrement = (newActivePower * (2.5 / 3600));
-        const newEnergyToday = Number((prev.energy_today + energyIncrement).toFixed(4));
-        const newEstimatedCost = Math.round(newEnergyToday * prev.tariff_rate);
-
-        // Budget Cap Cutoff Check
-        if ((newEstimatedCost >= prev.bill_limit_threshold || prev.estimated_bill_month >= prev.bill_limit_threshold) && relayConnected && !isBillTripped) {
-          isBillTripped = true;
-          relayConnected = false;
-          addNotification(
-            'Budget Cap Reached',
-            `Electricity spend reached threshold (₦${prev.bill_limit_threshold.toLocaleString()}). Supply shut off to prevent bill shock.`,
-            'warning'
-          );
-        }
-
-        // Deduct from prepaid units balance in real time
-        const newUnits = Math.max(0, Number((prev.prepaid_units_kwh - energyIncrement).toFixed(4)));
-        const newWalletBal = Math.max(0, Math.round(newUnits * prev.tariff_rate));
-        const newDaysRemaining = Math.max(1, Math.round(newUnits / 8.0));
-
-        return {
-          ...prev,
-          active_power: newActivePower,
-          voltage: newVoltage,
-          current: newCurrent,
-          power_factor: newPf,
-          battery_percentage: Math.round(newBattery),
-          battery_status: newBatteryStatus,
-          energy_today: newEnergyToday,
-          estimated_cost_today: newEstimatedCost,
-          prepaid_units_kwh: Number(newUnits.toFixed(1)),
-          wallet_balance: newWalletBal,
-          estimated_days_remaining: newDaysRemaining,
-          main_supply_connected: relayConnected,
-          voltage_cutoff_tripped: isVoltageTripped,
-          bill_cutoff_tripped: isBillTripped
-        };
-      });
-
-      // Handle Active Sharing Session progress
-      setActiveSession(prevSession => {
-        if (!prevSession || prevSession.status !== 'active') return prevSession;
-
-        const tickSeconds = 2.5;
-        const newElapsed = prevSession.elapsed_seconds + tickSeconds;
-        const powerJitter = Math.floor(Math.random() * 30 - 15);
-        const powerCap = prevSession.power_limit_w || 480;
-        const currentPower = Math.max(50, powerCap + powerJitter);
-        const energyInc = (currentPower / 1000) * (tickSeconds / 3600);
-        const newTransferred = Number((prevSession.energy_transferred_kwh + energyInc).toFixed(4));
-
-        const isEnergyLimitReached = newTransferred >= prevSession.energy_limit_kwh;
-        const isTimeLimitReached = prevSession.duration_limit_seconds ? newElapsed >= prevSession.duration_limit_seconds : false;
-
-        if (isEnergyLimitReached || isTimeLimitReached) {
-          const finishedSession: SharingSession = {
-            ...prevSession,
-            status: 'completed',
-            energy_transferred_kwh: Math.min(newTransferred, prevSession.energy_limit_kwh),
-            elapsed_seconds: newElapsed,
-            ended_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          };
-
-          setSharingHistory(h => [finishedSession, ...h]);
-          addNotification(
-            'Sharing Completed',
-            `${finishedSession.energy_transferred_kwh.toFixed(2)} kWh was successfully shared with ${prevSession.destination_meter_name}.`,
-            'sharing'
-          );
-          return null;
-        }
-
-        return {
-          ...prevSession,
-          current_power_w: currentPower,
-          energy_transferred_kwh: newTransferred,
-          elapsed_seconds: newElapsed
-        };
-      });
-
-      // Handle Receiving Session progress
-      setReceivingSession(prevRec => {
-        if (!prevRec || prevRec.status !== 'receiving') return prevRec;
-        const tickSeconds = 2.5;
-        const newElapsed = prevRec.elapsed_seconds + tickSeconds;
-        const energyInc = (prevRec.current_power_w / 1000) * (tickSeconds / 3600);
-        const newReceived = Number((prevRec.energy_transferred_kwh + energyInc).toFixed(4));
-
-        const isTimeReached = prevRec.duration_limit_seconds ? newElapsed >= prevRec.duration_limit_seconds : false;
-        if (newReceived >= prevRec.energy_limit_kwh || isTimeReached) {
-          const finished: SharingSession = {
-            ...prevRec,
-            status: 'completed',
-            energy_transferred_kwh: newReceived,
-            ended_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          };
-          setSharingHistory(h => [finished, ...h]);
-          addNotification(
-            'Receiving Completed',
-            `Received ${newReceived.toFixed(2)} kWh from ${prevRec.source_meter_name}.`,
-            'sharing'
-          );
-          return null;
-        }
-
-        return {
-          ...prevRec,
-          energy_transferred_kwh: newReceived,
-          elapsed_seconds: newElapsed
-        };
-      });
-
-    }, 2500);
-
-    return () => clearInterval(interval);
-  }, [addNotification, isLiveEndpointActive, meterData.meter_id]);
-
-  // Actions: Start Cloud Sharing (Streamlined: Energy Cap based)
   const startSharing = (
     recipient: RegisteredRecipient,
     energyLimitKwh: number,
-    powerLimitW?: number,
-    durationMinutes?: number
-  ) => {
-    if (meterData.device_status === 'offline') {
-      return { success: false, error: 'Your Meter is offline. Cloud connection required to share energy.' };
+    powerLimitW = 500,
+    durationMinutes = 60
+  ): { success: boolean; error?: string } => {
+    if (meterData.grid_status !== 'online') {
+      return { success: false, error: 'Grid is offline. Cloud sharing requires active mains supply.' };
     }
-    if (!recipient.is_online) {
-      return { success: false, error: `${recipient.meter_name} is currently offline.` };
-    }
-    if (activeSession) {
-      return { success: false, error: 'A sharing session is already active.' };
+    if (meterData.prepaid_units_kwh < energyLimitKwh) {
+      return { success: false, error: `Insufficient energy balance (${meterData.prepaid_units_kwh} kWh). Need ${energyLimitKwh} kWh.` };
     }
 
-    const detectedPower = powerLimitW || 480;
-    const newSession: SharingSession = {
-      session_id: `SES-${Math.floor(10000 + Math.random() * 90000)}-${Date.now().toString().slice(-2)}`,
+    const session: SharingSession = {
+      session_id: `SES-${Date.now().toString().slice(-6)}`,
       source_meter_id: meterData.meter_id,
       source_meter_name: meterData.meter_name,
       destination_meter_id: recipient.meter_id,
       destination_meter_name: recipient.meter_name,
       direction: 'sending',
       status: 'active',
-      power_limit_w: detectedPower,
       energy_limit_kwh: energyLimitKwh,
-      duration_limit_seconds: durationMinutes ? durationMinutes * 60 : undefined,
-      current_power_w: detectedPower,
+      power_limit_w: powerLimitW,
+      duration_limit_seconds: durationMinutes * 60,
+      current_power_w: powerLimitW,
       energy_transferred_kwh: 0,
       elapsed_seconds: 0,
-      started_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      started_at: new Date().toISOString(),
       source_online: true,
       destination_online: true,
       cloud_sync_status: 'live'
     };
 
-    setActiveSession(newSession);
+    setActiveSession(session);
+    setSharingHistory(prev => [session, ...prev]);
+
     addNotification(
-      'Energy Share Started',
-      `Sharing up to ${energyLimitKwh} kWh with ${recipient.meter_name}.`,
+      'Sharing Session Started',
+      `Cloud transfer of ${energyLimitKwh} kWh to ${recipient.meter_name} initiated.`,
       'sharing'
     );
     return { success: true };
   };
 
   const stopSharing = () => {
-    if (!activeSession) return;
-    const endedSession: SharingSession = {
-      ...activeSession,
-      status: 'completed',
-      ended_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setSharingHistory(prev => [endedSession, ...prev]);
-    setActiveSession(null);
-    addNotification(
-      'Sharing Stopped',
-      `Shared ${endedSession.energy_transferred_kwh.toFixed(2)} kWh with ${endedSession.destination_meter_name}.`,
-      'sharing'
-    );
+    if (activeSession) {
+      setActiveSession(null);
+      addNotification('Sharing Stopped', 'Energy sharing session ended.', 'sharing');
+    }
   };
 
   const stopReceiving = () => {
-    if (!receivingSession) return;
-    const ended: SharingSession = {
-      ...receivingSession,
-      status: 'completed',
-      ended_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setSharingHistory(prev => [ended, ...prev]);
-    setReceivingSession(null);
-    addNotification(
-      'Receiving Ended',
-      `Stopped receiving energy from ${ended.source_meter_name}.`,
-      'sharing'
-    );
+    if (receivingSession) {
+      setReceivingSession(null);
+      addNotification('Receiving Ended', 'Incoming energy transfer completed.', 'sharing');
+    }
   };
 
   const saveRecipient = (meterId: string) => {
-    setRecipients(prev =>
-      prev.map(r => (r.meter_id === meterId ? { ...r, is_saved: !r.is_saved } : r))
-    );
+    setRecipients(prev => prev.map(r => r.meter_id === meterId ? { ...r, is_saved: true } : r));
   };
 
   const searchRecipients = (query: string) => {
-    const q = query.trim().toLowerCase();
-    if (!q) return recipients;
-    return recipients.filter(
-      r =>
-        r.meter_name.toLowerCase().includes(q) ||
-        r.meter_id.toLowerCase().includes(q) ||
-        r.owner_name.toLowerCase().includes(q)
-    );
+    const q = query.toLowerCase();
+    return recipients.filter(r => r.meter_name.toLowerCase().includes(q) || r.meter_id.toLowerCase().includes(q) || r.owner_name.toLowerCase().includes(q));
   };
 
-  // Hardware Simulation Controls
   const toggleGridStatus = (forcedStatus?: GridStatus) => {
     setMeterData(prev => {
-      const nextStatus: GridStatus =
-        forcedStatus || (prev.grid_status === 'online' ? 'offline' : 'online');
-      if (nextStatus === 'offline') {
-        addNotification('Grid Outage Alert', 'Grid power was lost. Meter is operating on backup battery.', 'outage');
-      } else {
-        addNotification('Grid Restored', 'Grid power has been restored to normal levels.', 'restored');
-      }
+      const next: GridStatus = forcedStatus || (prev.grid_status === 'online' ? 'offline' : 'online');
+      const isOnline = next === 'online';
+      addNotification(
+        isOnline ? 'Grid Power Restored' : 'Grid Outage Detected',
+        isOnline ? 'Mains electricity restored.' : 'Blackout detected. Running on battery.',
+        isOnline ? 'restored' : 'outage'
+      );
       return {
         ...prev,
-        grid_status: nextStatus,
-        battery_status: nextStatus === 'offline' ? 'battery' : 'charging'
+        grid_status: next,
+        voltage: isOnline ? 231.4 : 0.0,
+        active_power: isOnline ? 1.54 : 0.0,
+        current: isOnline ? 6.8 : 0.0
       };
     });
   };
 
   const toggleMeterOnline = (forcedOnline?: boolean) => {
     setMeterData(prev => {
-      const isOnline = forcedOnline !== undefined ? forcedOnline : prev.device_status === 'offline';
-      const nextStatus: DeviceStatus = isOnline ? 'online' : 'offline';
-
-      updateProtectionSettings(prev.meter_id, {
-        // broadcast online status
-      });
-
-      if (!isOnline) {
-        if (activeSession) {
-          const interrupted: SharingSession = {
-            ...activeSession,
-            status: 'connection_lost',
-            cloud_sync_status: 'lost',
-            ended_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          };
-          setSharingHistory(h => [interrupted, ...h]);
-          setActiveSession(null);
-        }
-        if (receivingSession) {
-          setReceivingSession(null);
-        }
-        addNotification('Meter Offline', 'Internet dropped. Realtime telemetry and cloud controls are paused.', 'offline');
-      } else {
-        addNotification('Meter Online', 'Meter reconnected to cloud backend. Realtime sync active.', 'system');
-      }
-
+      const nextOnline = forcedOnline !== undefined ? forcedOnline : prev.device_status !== 'online';
       return {
         ...prev,
-        device_status: nextStatus,
-        connection_quality: isOnline ? 'good' : 'offline'
+        device_status: nextOnline ? 'online' : 'offline',
+        connection_quality: nextOnline ? 'good' : 'offline'
       };
     });
   };
 
   const toggleMainSupply = async () => {
-    if (meterData.device_status === 'offline') {
-      addNotification('Offline Safety Block', 'Cannot toggle relay: Meter is disconnected from cloud.', 'offline');
+    const newState = !meterData.main_supply_connected;
+    if (meterData.tamper_locked && newState) {
+      addNotification(
+        'Contactor Blocked',
+        'Cannot reconnect power while Tamper Lock is active. Clear tamper with Admin PIN first.',
+        'warning'
+      );
       return;
     }
 
-    if (meterData.voltage_cutoff_tripped) {
-      addNotification('Overvoltage Lock', `Voltage exceeded ${meterData.max_voltage_limit}V. Use Reset Protection once line voltage normalizes.`, 'warning');
-      return;
-    }
-
-    if (meterData.bill_cutoff_tripped) {
-      addNotification('Budget Limit Lock', `Monthly bill reached ₦${meterData.bill_limit_threshold.toLocaleString()}. Adjust budget cap in settings to re-arm.`, 'warning');
-      return;
-    }
-
-    const nextState = !meterData.main_supply_connected;
-    lastUserToggleTimeRef.current = Date.now();
-
-    // 1. Optimistic instant UI update
     setMeterData(prev => ({
       ...prev,
-      main_supply_connected: nextState,
-      active_power: nextState ? prev.active_power : 0
+      main_supply_connected: newState,
+      active_power: newState ? 1.54 : 0.0,
+      current: newState ? 6.8 : 0.0
     }));
 
-    addNotification(
-      nextState ? 'Main Supply Restored' : 'Main Supply Disconnected',
-      nextState ? 'Whole-house electrical supply connected.' : 'Whole-house electricity disconnect initiated by user.',
-      'warning'
-    );
-
-    // 2. Persist to Supabase asynchronously outside state setter
-    const success = await toggleRemoteSupplyRelay(meterData.meter_id, nextState);
-    if (!success) {
-      lastUserToggleTimeRef.current = 0;
-      setMeterData(prev => ({ ...prev, main_supply_connected: !nextState }));
-      addNotification('Relay Sync Error', 'Failed to update relay state in cloud.', 'warning');
+    if (isSupabaseConfigured()) {
+      await toggleRemoteSupplyRelay(meterData.meter_id, newState);
     }
+
+    addNotification(
+      newState ? 'Supply Connected' : 'Supply Cut',
+      newState ? 'Whole-house supply contactor engaged.' : 'Whole-house contactor opened (Power cut).',
+      newState ? 'restored' : 'outage'
+    );
   };
 
   const setTariff = (rate: number, currencyCode: string, currencySymbol: string) => {
@@ -755,46 +757,40 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       ...prev,
       tariff_rate: rate,
       currency_code: currencyCode,
-      currency_symbol: currencySymbol,
-      estimated_cost_today: Math.round(prev.energy_today * rate)
+      currency_symbol: currencySymbol
     }));
   };
 
   const simulateIncomingShare = () => {
-    if (receivingSession) {
-      stopReceiving();
-      return;
-    }
-    const recSession: SharingSession = {
-      session_id: `SES-INC-${Date.now().toString().slice(-4)}`,
-      source_meter_id: 'MTR-34BC-9821',
-      source_meter_name: 'Family House',
+    const session: SharingSession = {
+      session_id: `SES-INC-${Date.now().toString().slice(-6)}`,
+      source_meter_id: 'MTR-72AF-2091',
+      source_meter_name: 'Neighbour House',
       destination_meter_id: meterData.meter_id,
       destination_meter_name: meterData.meter_name,
       direction: 'receiving',
-      status: 'receiving',
-      power_limit_w: 380,
-      energy_limit_kwh: 1.0,
-      duration_limit_seconds: 3600,
-      current_power_w: 380,
-      energy_transferred_kwh: 0.12,
-      elapsed_seconds: 180,
-      started_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'active',
+      energy_limit_kwh: 1.5,
+      power_limit_w: 600,
+      current_power_w: 600,
+      energy_transferred_kwh: 0,
+      elapsed_seconds: 0,
+      started_at: new Date().toISOString(),
       source_online: true,
       destination_online: true,
       cloud_sync_status: 'live'
     };
-    setReceivingSession(recSession);
-    addNotification('Receiving Energy Started', 'Your Meter is currently receiving 380 W from Family House.', 'sharing');
+    setReceivingSession(session);
+    addNotification('Incoming Energy Share', 'Receiving 1.5 kWh from Neighbour House.', 'sharing');
   };
 
-  const drainBattery = (targetPercentage = 18) => {
+  const drainBattery = (target = 15) => {
     setMeterData(prev => ({
       ...prev,
-      battery_percentage: targetPercentage,
-      battery_status: targetPercentage < 20 ? 'low' : 'battery'
+      battery_percentage: target,
+      battery_status: target < 20 ? 'low' : 'battery'
     }));
-    addNotification('Battery Low Alert', `Meter backup battery is below 20% (${targetPercentage}%).`, 'warning');
+    addNotification('Battery Low', `Backup battery at ${target}%.`, 'warning');
   };
 
   const rechargeBattery = () => {
@@ -859,6 +855,28 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     <MeterContext.Provider
       value={{
         meterData,
+        fleetMeters,
+        selectedMeterId,
+        switchMeter,
+        refreshFleet,
+        userRole,
+        setUserRole,
+        isAdminUnlocked,
+        verifyAdminPin,
+        lockAdmin,
+        tamperEvents,
+        outageLogs,
+        isTamperModalOpen,
+        setIsTamperModalOpen,
+        isAIAssistantOpen,
+        setIsAIAssistantOpen,
+        budgetProgressPct,
+        projectedMonthKwh,
+        projectedMonthCostNaira,
+        handleAdminSetRelay,
+        handleAdminClearTamper,
+        handleAdminUpdateConfig,
+        handleAdminBulkTariff,
         activeSession,
         receivingSession,
         sharingHistory,
