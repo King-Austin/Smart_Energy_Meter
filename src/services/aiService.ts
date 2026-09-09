@@ -5,6 +5,32 @@ const GEMINI_API_KEY =
   (import.meta as any).env?.GEMINI_API_KEY ||
   '';
 
+export function getGroqApiKey(): string {
+  if (typeof window !== 'undefined') {
+    const localKey = localStorage.getItem('voltrix_groq_api_key');
+    if (localKey && localKey.trim()) return localKey.trim();
+  }
+  return (
+    (import.meta as any).env?.VITE_GROQ_API_KEY ||
+    (import.meta as any).env?.GROQ_API_KEY ||
+    ''
+  );
+}
+
+export function setGroqApiKey(key: string): void {
+  if (typeof window !== 'undefined') {
+    if (key && key.trim()) {
+      localStorage.setItem('voltrix_groq_api_key', key.trim());
+    } else {
+      localStorage.removeItem('voltrix_groq_api_key');
+    }
+  }
+}
+
+export function hasGroqApiKey(): boolean {
+  return Boolean(getGroqApiKey());
+}
+
 export async function generateAIInsights(
   meter: MeterTelemetry,
   hourlyData?: { hourLabel: string; kwh: number; cost: number }[]
@@ -142,7 +168,59 @@ export async function askEnergyAssistant(
     return `✅ **Consumption is Normal:**\nYour power draw of **${meter.active_power.toFixed(2)} kW** and today's **${meter.energy_today.toFixed(2)} kWh** match your regular baseline pattern. Voltage is stable at **${meter.voltage}V** with a healthy power factor of **${meter.power_factor}**.`;
   }
 
-  // If external Gemini key is available, query Gemini 1.5 Flash for arbitrary questions
+  // 1. Groq Ultra-Fast LPU API (Prioritized for instant responses)
+  const groqKey = getGroqApiKey();
+  if (groqKey) {
+    try {
+      const systemPrompt = `You are Voltrix AI, a helpful, ultra-fast Nigerian smart energy meter advisor.
+Context on current submeter telemetry:
+- Submeter ID: ${meter.meter_id} (${meter.meter_name}, ${meter.location || 'Main Unit'})
+- Voltage: ${meter.voltage} V (Grid Status: ${meter.grid_status})
+- Current: ${meter.current} A
+- Active Power: ${meter.active_power} kW
+- Power Factor: ${meter.power_factor}
+- Frequency: ${meter.frequency} Hz
+- Energy Today: ${meter.energy_today} kWh (Cost today: ₦${meter.estimated_cost_today || Math.round(meter.energy_today * meter.tariff_rate)})
+- Monthly Energy: ${meter.energy_month} kWh
+- Tariff Rate: ₦${meter.tariff_rate}/kWh
+- Monthly Budget: ₦${meter.monthly_budget_naira} (₦${meter.estimated_bill_month || 0} consumed so far)
+- Contactor Relay State: ${meter.main_supply_connected ? 'CONNECTED (Power ON)' : 'DISCONNECTED (Power OFF)'}
+- Tamper Interlock State: ${meter.is_tampered || meter.tamper_locked ? 'TAMPER BREACH DETECTED (SS-5GL Lid Switch Opened)' : 'SECURE'}
+- Active Blackout Logs: ${outageLogs.length} total logged
+
+Provide a direct, concise, practical answer tailored to the Nigerian electricity context (Naira ₦, Band tariffs, gen/inverter trade-offs, appliance load shedding). Keep response under 3 paragraphs with clean markdown.`;
+
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${groqKey}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: query }
+          ],
+          temperature: 0.3,
+          max_tokens: 600
+        })
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const content = json?.choices?.[0]?.message?.content;
+        if (content) return content;
+      } else {
+        const errJson = await res.json().catch(() => null);
+        console.warn('[Groq AI] API error response:', errJson);
+      }
+    } catch (err) {
+      console.warn('[Groq AI] Request error:', err);
+    }
+  }
+
+  // 2. Gemini 1.5 Flash fallback
   if (GEMINI_API_KEY) {
     try {
       const prompt = `You are the Voltrix Smart Energy Assistant for a submeter in Nigeria.
@@ -180,5 +258,6 @@ User Question: "${query}"`;
     }
   }
 
-  return `Voltrix Smart Meter Status: Voltage is **${meter.voltage}V**, load is **${meter.active_power} kW** (${meter.current}A), with **${meter.energy_today} kWh** used today. Tariff is configured at **₦${meter.tariff_rate}/kWh**.`;
+  // 3. Smart deterministic telemetry response
+  return `⚡ **Voltrix Energy Status:**\n- **Live Load:** ${meter.active_power.toFixed(2)} kW (${meter.current.toFixed(1)}A @ ${meter.voltage}V, PF: ${meter.power_factor})\n- **Today's Consumption:** ${meter.energy_today.toFixed(2)} kWh (~₦${Math.round(meter.energy_today * meter.tariff_rate).toLocaleString()})\n- **Tariff Rate:** ₦${meter.tariff_rate}/kWh (Monthly Budget: ₦${meter.monthly_budget_naira.toLocaleString()})\n- **Contactor Relay:** ${meter.main_supply_connected ? 'Active (ON)' : 'Isolated (OFF)'}\n\n💡 *Tip: Connect your Groq API Key using the ⚡ settings button above to enable instant conversational intelligence!*`;
 }

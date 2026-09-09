@@ -61,21 +61,35 @@ body {
   min-height: 100vh;
 }
 
-/* Centered Mobile Shell */
+/* Dynamic App Shell */
 #root {
-  max-width: 440px;
-  margin: 0 auto;
   min-height: 100vh;
   position: relative;
   background-color: var(--bg-surface);
-  border-left: 1px solid var(--border-subtle);
-  border-right: 1px solid var(--border-subtle);
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.08);
   overflow-x: hidden;
+  transition: max-width 0.25s ease;
 }
 
-.dark #root, [data-theme="dark"] #root {
-  box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+/* Client Dashboard: Centered Mobile Frame */
+#root:not(.admin-layout) {
+  max-width: 440px;
+  margin: 0 auto;
+  border-left: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.05);
+}
+
+.dark #root:not(.admin-layout), [data-theme="dark"] #root:not(.admin-layout) {
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Super Admin Dashboard: Wide Enterprise Command Center */
+#root.admin-layout {
+  max-width: 1440px;
+  margin: 0 auto;
+  border: none;
+  box-shadow: none;
+  background-color: var(--bg-primary);
 }
 
 /* Clean Elevated Card */

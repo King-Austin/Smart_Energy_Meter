@@ -30,6 +30,8 @@ import {
 export const SettingsScreen: React.FC = () => {
   const {
     meterData,
+    fleetMeters,
+    navigateToRoute,
     setTariff,
     theme,
     toggleTheme,
@@ -681,29 +683,6 @@ export const SettingsScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Admin Fleet Command Portal Link */}
-      <div className="glass-card p-4 border-amber-500/30 bg-amber-500/5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Building2 className="w-5 h-5 text-amber-500" />
-            <div>
-              <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
-                Admin Fleet Command Center
-              </h3>
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                Multi-meter facility management, contactor cutoffs & bulk tariffs
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => setActiveTab('admin')}
-            className="btn-primary text-xs py-2 px-3 bg-amber-500 hover:bg-amber-600 border-amber-400"
-          >
-            Open Admin
-          </button>
-        </div>
-      </div>
-
       {/* 7. Demo Simulator Floating Trigger */}
       <div className="glass-card p-4 border-[#ff5b26]/30 bg-[#ff5b26]/5">
         <div className="flex items-center justify-between">
@@ -727,7 +706,38 @@ export const SettingsScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 8. Account Profile & Logout */}
+      {/* 8. Super Admin Portal Entry Point */}
+      <div className="glass-card p-4.5 border-[#ff5b26]/30 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#ff5b26] to-[#e04818] text-white flex items-center justify-center shadow-xs shrink-0">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm font-black text-white">
+                  Super Admin Fleet Portal
+                </h3>
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-[#ff5b26] text-white">
+                  Admin Route
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Monitor all {fleetMeters.length} submeters, inspect client dashboards & bulk-update tariffs
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigateToRoute('admin')}
+            className="px-3.5 py-2.5 rounded-xl bg-[#ff5b26] hover:bg-[#e04818] text-white text-xs font-black transition-all shadow-xs flex items-center gap-1 shrink-0"
+          >
+            <span>Launch</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* 9. Account Profile & Logout */}
       <div className="glass-card p-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-2xl bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">

@@ -6,7 +6,6 @@ import { WalletCard } from '../components/wallet/WalletCard';
 import { EnergyTodayCard } from '../components/home/EnergyTodayCard';
 import { LiveElectricalCard } from '../components/home/LiveElectricalCard';
 import { BudgetSnapshotCard } from '../components/home/BudgetSnapshotCard';
-import { AIInsightsCard } from '../components/ai/AIInsightsCard';
 import {
   Zap,
   ShieldCheck,
@@ -16,7 +15,7 @@ import {
   ChevronRight,
   CheckCircle2,
   Activity,
-  Building2
+  Sparkles
 } from 'lucide-react';
 
 export const HomeScreen: React.FC = () => {
@@ -25,7 +24,8 @@ export const HomeScreen: React.FC = () => {
     walletTransactions,
     meterData,
     resetSafetyCutoff,
-    setIsTamperModalOpen
+    setIsTamperModalOpen,
+    setIsAIAssistantOpen
   } = useMeter();
 
   const isSafetyTripped = meterData.voltage_cutoff_tripped || meterData.bill_cutoff_tripped;
@@ -122,17 +122,17 @@ export const HomeScreen: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('admin')}
-          className="glass-card p-3 flex flex-col items-center justify-center text-center group hover:border-cyan-500/50 transition-all"
+          onClick={() => setActiveTab('energy')}
+          className="glass-card p-3 flex flex-col items-center justify-center text-center group hover:border-[#0284c7]/50 transition-all"
         >
-          <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-500 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
-            <Building2 className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-[#0284c7]/15 text-[#0284c7] flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+            <Activity className="w-5 h-5" />
           </div>
           <span className="text-xs font-bold text-slate-800 dark:text-neutral-200">
-            Fleet Admin
+            Analytics
           </span>
           <span className="text-[10px] text-slate-500 dark:text-neutral-400">
-            Multi-Meter
+            Usage & Outages
           </span>
         </button>
 
@@ -192,8 +192,31 @@ export const HomeScreen: React.FC = () => {
       {/* 10. PZEM Live Electrical Telemetry (V, I, PF, Hz, kVA, kVAR) */}
       <LiveElectricalCard />
 
-      {/* 11. AI Energy Intelligence & Recommendations */}
-      <AIInsightsCard />
+      {/* 11. Voltrix AI Advisor Chat Trigger */}
+      <button
+        onClick={() => setIsAIAssistantOpen(true)}
+        className="w-full p-4 rounded-2xl bg-gradient-to-r from-[#ff5b26]/8 via-white to-[#0284c7]/8 dark:from-[#ff5b26]/15 dark:via-neutral-900 dark:to-[#0284c7]/15 border border-slate-200 dark:border-neutral-800 hover:border-[#ff5b26]/50 flex items-center justify-between transition-all shadow-2xs group text-left"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-[#ff5b26] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-black text-slate-900 dark:text-white">
+                Voltrix AI Advisor
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#ff5b26]/15 text-[#ff5b26]">
+                Groq ⚡
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5">
+              Tap to chat about today's consumption, bill forecast, and outage forensics
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#ff5b26] group-hover:translate-x-0.5 transition-all" />
+      </button>
 
       {/* 12. Recent Purchase Ledger */}
       <div className="glass-card p-4">

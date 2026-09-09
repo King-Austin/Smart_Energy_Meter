@@ -247,5 +247,6 @@ export interface NotificationItem {
   meter_id?: string;
 }
 
-export type ActiveTab = 'home' | 'energy' | 'admin' | 'wallet' | 'share' | 'settings' | 'device' | 'auth';
+export type ActiveTab = 'home' | 'energy' | 'wallet' | 'share' | 'settings' | 'device' | 'auth';
 export type EnergyPeriod = 'today' | 'daily' | 'week' | 'month';
+export type AppRoute = 'client' | 'admin';

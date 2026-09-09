@@ -13,8 +13,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
     toggleTheme,
     unreadNotificationCount,
     setIsSimPanelOpen,
-    activeTab,
-    setActiveTab
+    setActiveTab,
+    navigateToRoute
   } = useMeter();
 
   const isMeterOffline = meterData.device_status === 'offline';
@@ -73,21 +73,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
 
         {/* Right: Utility & Theme Controls */}
         <div className="flex items-center gap-1">
-          {/* Admin Fleet Portal Quick Link */}
-          <button
-            onClick={() => setActiveTab('admin')}
-            className={`p-2.5 rounded-2xl transition-colors relative ${
-              activeTab === 'admin'
-                ? 'bg-[#ff5b26]/15 text-[#ff5b26] font-bold'
-                : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
-            }`}
-            title="Admin Fleet Command Center"
-            aria-label="Open Admin Fleet Portal"
-          >
-            <Building2 className="w-4 h-4 text-[#ff5b26]" />
-            <span className="sr-only">Admin Fleet</span>
-          </button>
-
           {/* Demo Simulation Controller Toggle */}
           <button
             onClick={() => setIsSimPanelOpen(true)}
@@ -111,6 +96,16 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
             ) : (
               <Moon className="w-4 h-4 text-slate-600" />
             )}
+          </button>
+
+          {/* Super Admin Portal Switcher */}
+          <button
+            onClick={() => navigateToRoute('admin')}
+            className="p-2.5 rounded-2xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 hover:text-[#ff5b26] transition-colors"
+            title="Super Admin Portal (View All Submeters)"
+            aria-label="Super Admin Portal"
+          >
+            <Building2 className="w-4 h-4" />
           </button>
 
           {/* Notifications Bell */}

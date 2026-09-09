@@ -9,7 +9,8 @@ import {
   NotificationItem,
   ActiveTab,
   GridStatus,
-  WalletTransaction
+  WalletTransaction,
+  AppRoute
 } from '../types/meter';
 import {
   INITIAL_METER_DATA,
@@ -105,7 +106,11 @@ interface MeterContextType {
   resetSafetyCutoff: () => void;
   setSafetyLimits: (maxVoltage: number, minVoltage: number, billThreshold: number) => void;
 
-  // Navigation & Themes
+  // Navigation, Routing & Themes
+  currentRoute: AppRoute;
+  navigateToRoute: (route: AppRoute) => void;
+  inspectingMeterId: string | null;
+  setInspectingMeterId: (meterId: string | null) => void;
   setActiveTab: (tab: ActiveTab) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
@@ -168,54 +173,73 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [recipients, setRecipients] = useState<RegisteredRecipient[]>(REGISTERED_RECIPIENTS);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>(INITIAL_WALLET_TRANSACTIONS);
-  const parseRouteToTab = (routeStr: string): ActiveTab => {
-    const clean = routeStr.replace(/^[#/]+/, '').toLowerCase();
-    if (clean === 'admin' || clean === 'fleet') return 'admin';
-    if (clean === 'energy') return 'energy';
-    if (clean === 'wallet') return 'wallet';
-    if (clean === 'share') return 'share';
-    if (clean === 'settings') return 'settings';
-    if (clean === 'device') return 'device';
-    if (clean === 'auth') return 'auth';
-    return 'home';
-  };
-
-  const getInitialTab = (): ActiveTab => {
-    if (typeof window === 'undefined') return 'home';
-    const hash = window.location.hash;
-    const path = window.location.pathname;
-    if (hash && hash !== '#') return parseRouteToTab(hash);
-    if (path && path !== '/') return parseRouteToTab(path);
-    return 'home';
-  };
-
-  const [activeTab, setActiveTabState] = useState<ActiveTab>(getInitialTab);
-
-  const setActiveTab = useCallback((tab: ActiveTab) => {
-    setActiveTabState(tab);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('home');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
-      window.location.hash = `#${tab}`;
+      const saved = localStorage.getItem('voltrix_theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+    }
+    return 'light'; // Light mode by default with Voltrix branding!
+  });
+
+  // Dedicated Route State: 'client' (consumer dashboard) vs 'admin' (super admin portal)
+  const [currentRoute, setCurrentRoute] = useState<AppRoute>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      const path = window.location.pathname;
+      if (hash === '#/admin' || hash === '#admin' || path === '/admin') {
+        return 'admin';
+      }
+    }
+    return 'client';
+  });
+
+  // Client Dashboard Inspection Mode for Super Admin
+  const [inspectingMeterId, setInspectingMeterId] = useState<string | null>(null);
+
+  const navigateToRoute = useCallback((route: AppRoute) => {
+    setCurrentRoute(route);
+    if (typeof window !== 'undefined') {
+      window.location.hash = route === 'admin' ? '#/admin' : '#/';
+      const rootEl = document.getElementById('root');
+      if (rootEl) {
+        if (route === 'admin') {
+          rootEl.classList.add('admin-layout');
+        } else {
+          rootEl.classList.remove('admin-layout');
+        }
+      }
     }
   }, []);
 
-  // Sync hash/URL on popstate / hashchange
+  // Sync URL hash with route state and update document title / layout classes
   useEffect(() => {
     const handleLocationChange = () => {
       const hash = window.location.hash;
       const path = window.location.pathname;
-      const newTab = parseRouteToTab(hash || path);
-      setActiveTabState(newTab);
+      const isAdm = hash === '#/admin' || hash === '#admin' || path === '/admin';
+      const targetRoute = isAdm ? 'admin' : 'client';
+      setCurrentRoute(targetRoute);
+      const rootEl = document.getElementById('root');
+      if (rootEl) {
+        if (targetRoute === 'admin') {
+          rootEl.classList.add('admin-layout');
+        } else {
+          rootEl.classList.remove('admin-layout');
+        }
+      }
     };
 
     window.addEventListener('hashchange', handleLocationChange);
     window.addEventListener('popstate', handleLocationChange);
+    handleLocationChange();
+
     return () => {
       window.removeEventListener('hashchange', handleLocationChange);
       window.removeEventListener('popstate', handleLocationChange);
     };
   }, []);
 
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [isSimPanelOpen, setIsSimPanelOpen] = useState<boolean>(false);
 
@@ -226,13 +250,17 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Budget Milestone alert tracker (prevents repeated alerts in the same session)
   const sentAlertTiersRef = useRef<{ [tier: string]: boolean }>({});
 
-  // Theme Sync
+  // Theme Sync & Persistence
   useEffect(() => {
     const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
     if (theme === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('voltrix_theme', theme);
     }
   }, [theme]);
 
@@ -932,6 +960,10 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         unreadNotificationCount,
         activeTab,
         theme,
+        currentRoute,
+        navigateToRoute,
+        inspectingMeterId,
+        setInspectingMeterId,
         isAuthenticated,
         isSimPanelOpen,
         apiEndpointUrl,
