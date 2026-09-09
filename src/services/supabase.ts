@@ -96,13 +96,17 @@ export async function toggleRemoteSupplyRelay(meterId: string, connected: boolea
       .from('meters')
       .update({
         main_supply_connected: connected,
-        active_power: connected ? 2.46 : 0.0,
         updated_at: new Date().toISOString()
       })
       .eq('meter_id', meterId);
 
-    return !error;
-  } catch {
+    if (error) {
+      console.error('[Supabase] Failed to update relay state:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[Supabase] Error toggling relay state:', err);
     return false;
   }
 }

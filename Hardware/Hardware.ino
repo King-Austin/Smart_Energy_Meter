@@ -31,20 +31,22 @@ float uncommittedKwh = 0.0f;
 unsigned long lastTelemetryMillis = 0;
 unsigned long lastEnergyTickMillis = 0;
 
-// Pulse magnetic latching contactor relay (50ms pulse, zero continuous heat)
-void pulseRelay(bool turnOn) {
+// Single-channel Relay Contactor Control on pin D27 (Active LOW Trigger)
+// LOW (0.0V) = Relay energized / Contacts closed / Bulb ON
+// HIGH (3.3V) / INPUT High-Z = Relay de-energized / Contacts open / Bulb OFF
+void setRelay(bool turnOn) {
   if (turnOn) {
-    digitalWrite(RELAY_SET_PIN, HIGH);
-    delay(50);
-    digitalWrite(RELAY_SET_PIN, LOW);
+    pinMode(RELAY_PIN, OUTPUT);
+    digitalWrite(RELAY_PIN, LOW); // Sinks to 0V: Optocoupler fires -> Relay snaps closed -> Bulb ON
     meter.isRelayOn = true;
-    Serial.println(F("[CONTACTOR] Latching Pulse -> ON (Power Supplied)"));
+    Serial.println(F("[RELAY D27] Contactor CLOSED -> Pin D27 LOW (0.0V) [Bulb ON]"));
   } else {
-    digitalWrite(RELAY_RESET_PIN, HIGH);
-    delay(50);
-    digitalWrite(RELAY_RESET_PIN, LOW);
+    // Cut current cleanly: drive HIGH then float to INPUT (High-Z)
+    pinMode(RELAY_PIN, OUTPUT);
+    digitalWrite(RELAY_PIN, HIGH);
+    pinMode(RELAY_PIN, INPUT);
     meter.isRelayOn = false;
-    Serial.println(F("[CONTACTOR] Latching Pulse -> OFF (Power Cut)"));
+    Serial.println(F("[RELAY D27] Contactor OPEN -> Pin D27 High-Z Float [Bulb OFF]"));
   }
 }
 
@@ -84,12 +86,24 @@ void setup() {
   delay(1000);
 
   Serial.println(F("\n======================================================="));
-  Serial.println(F("   VOLTRIX SMART ENERGY METER - ESP32 FIRMWARE v1.0.4  "));
+  Serial.println(F("   VOLTRIX SMART ENERGY METER - ESP32 FIRMWARE v1.0.5  "));
+  Serial.println(F("   Hardware: Relay (D27 Active LOW) | ZMPT101B (D35)   "));
   Serial.println(F("   Monitoring Mode (5-Second Supabase Interval)       "));
   Serial.println(F("=======================================================\n"));
 
-  pinMode(RELAY_SET_PIN, OUTPUT);
-  pinMode(RELAY_RESET_PIN, OUTPUT);
+  // Quick Relay Self-Test: Click ON then OFF so user immediately verifies the bulb & relay
+  Serial.println(F("[RELAY TEST] Testing Pin D27 (Self-Test Click)..."));
+  setRelay(true);
+  delay(1000);
+  setRelay(false);
+  delay(800);
+  setRelay(true); // Default ON at boot
+  Serial.println(F("[RELAY] Power ON: Contactor CLOSED (Bulb ON)"));
+
+  // Configure ADC for ZMPT101B AC Voltage Sensor on GPIO 35
+  analogReadResolution(12); // 12-bit (0 - 4095)
+  analogSetAttenuation(ADC_11db); // 11dB gives full 0V to 3.3V range
+
   pinMode(STATUS_LED_PIN, OUTPUT);
   digitalWrite(STATUS_LED_PIN, LOW);
 
@@ -110,11 +124,11 @@ void setup() {
 #endif
   meter.tamperReason = TamperType::NONE;
 
-  // Latch contactor to stored state
+  // Set relay to stored state
   if (meter.remainingKwh > 0.0f && !meter.isTampered) {
-    pulseRelay(true);
+    setRelay(true);
   } else {
-    pulseRelay(false);
+    setRelay(false);
   }
 
   // Connect to Wi-Fi
@@ -122,13 +136,39 @@ void setup() {
 }
 
 void loop() {
+  // Check for interactive Serial keyboard test commands (Type 1 for ON, 0 for OFF, t to Toggle)
+  if (Serial.available()) {
+    char cmd = Serial.read();
+    if (cmd == '1') {
+      Serial.println(F("\n>>> [MANUAL TEST] KEY '1' PRESSED -> FORCING RELAY ON (Pin D27 = LOW) <<<"));
+      setRelay(true);
+    } else if (cmd == '0') {
+      Serial.println(F("\n>>> [MANUAL TEST] KEY '0' PRESSED -> FORCING RELAY OFF (Pin D27 = HIGH) <<<"));
+      setRelay(false);
+    } else if (cmd == 't' || cmd == 'T') {
+      Serial.println(F("\n>>> [MANUAL TEST] KEY 't' PRESSED -> TOGGLING RELAY <<<"));
+      setRelay(!meter.isRelayOn);
+    }
+  }
+
   unsigned long now = millis();
 
-  // 1. TAMPER MONITORING (Only checked if physical sensor pins are enabled)
+
+  // 1. HARDWARE PROTECTIVE & TAMPER MONITORING
+#if ENABLE_PHYSICAL_VOLTAGE
+  // Immediate Overvoltage Safety Cutoff (trips if voltage exceeds safe threshold, e.g. 250V)
+  if (meter.isRelayOn && currentReadings.voltage >= OVERVOLTAGE_LIMIT) {
+    Serial.printf("[OVERVOLTAGE ALARM] %.1fV EXCEEDED CUTOFF (%.0fV)! Immediate Relay Cutoff!\n",
+                  currentReadings.voltage, OVERVOLTAGE_LIMIT);
+    setRelay(false);
+    saveNVS();
+  }
+#endif
+
 #if ENABLE_PHYSICAL_TAMPER_PINS
   if (!meter.isTampered && Sensors.checkTamperConditions(meter, currentReadings)) {
     Serial.println(F("[ALARM] TAMPER DETECTED! Immediate Contactor Lockout!"));
-    pulseRelay(false);
+    setRelay(false);
     saveNVS();
   }
 #endif
@@ -146,7 +186,7 @@ void loop() {
       // Autonomous zero-balance trip
       if (meter.remainingKwh <= 0.0f) {
         Serial.println(F("[BALANCE] Units Exhausted! Auto-tripping contactor."));
-        pulseRelay(false);
+        setRelay(false);
         saveNVS();
       }
 
@@ -161,15 +201,15 @@ void loop() {
   if (now - lastTelemetryMillis >= TELEMETRY_INTERVAL_MS) {
     lastTelemetryMillis = now;
 
-    // Generate/read mock monitoring data (simulationMode = true)
+    // Read sensors (True RMS voltage on D35)
     Sensors.readSensors(currentReadings, true);
 
     // Print readable diagnostics to Serial
     Serial.println(F("-------------------------------------------------------"));
-    Serial.printf("[TELEMETRY] Meter: %s | V: %.1fV | I: %.2fA | P: %.2fkW | PF: %.2f\n",
+    Serial.printf("[TELEMETRY] Meter: %s | V_RMS: %.1fV | I: %.2fA | P: %.2fkW | PF: %.2f\n",
                   meter.meterId, currentReadings.voltage, currentReadings.liveCurrent,
                   currentReadings.activePower, currentReadings.powerFactor);
-    Serial.printf("[STATUS] Units: %.2f kWh | Relay: %s | Tamper: %s\n",
+    Serial.printf("[STATUS] Units: %.2f kWh | Relay (D27): %s | Tamper: %s\n",
                   meter.remainingKwh, meter.isRelayOn ? "CLOSED (ON)" : "OPEN (OFF)",
                   meter.isTampered ? "TRIPPED" : "SECURE");
 
@@ -183,14 +223,19 @@ void loop() {
       digitalWrite(STATUS_LED_PIN, LOW);
 
       if (sync.success) {
-        Serial.println(F("[CLOUD] Supabase Telemetry Sync -> HTTP 200 OK"));
-        // Check for remote relay commands from user web dashboard
+        Serial.printf("[CLOUD] Sync HTTP 200 | Cloud Supply: %s | Prepaid: %.2f kWh\n",
+                      sync.mainSupplyConnected ? "CONNECT (ON)" : "CUTOFF (OFF)",
+                      sync.prepaidUnitsKwh);
+
+        // Remote relay commands from user web dashboard (Active-LOW Trigger)
         if (!sync.mainSupplyConnected && meter.isRelayOn) {
-          Serial.println(F("[REMOTE] Cloud Relay Cutoff Command Received."));
-          pulseRelay(false);
+          Serial.println(F(">>> [REMOTE COMMAND] Dashboard switched Mains OFF -> Opening Relay (Bulb OFF) <<<"));
+          setRelay(false);
+          saveNVS();
         } else if (sync.mainSupplyConnected && !meter.isRelayOn && !meter.isTampered && meter.remainingKwh > 0.0f) {
-          Serial.println(F("[REMOTE] Cloud Relay Restore Command Received."));
-          pulseRelay(true);
+          Serial.println(F(">>> [REMOTE COMMAND] Dashboard switched Mains ON -> Closing Relay (Pin D27 = LOW, Bulb ON) <<<"));
+          setRelay(true);
+          saveNVS();
         }
       } else {
         Serial.print(F("[CLOUD ERROR] Sync failed: "));

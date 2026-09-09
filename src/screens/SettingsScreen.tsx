@@ -21,7 +21,9 @@ import {
   Terminal,
   ShieldCheck,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  Power,
+  Lightbulb
 } from 'lucide-react';
 
 export const SettingsScreen: React.FC = () => {
@@ -41,7 +43,8 @@ export const SettingsScreen: React.FC = () => {
     setIsLiveEndpointActive,
     pingBackend,
     setSafetyLimits,
-    resetSafetyCutoff
+    resetSafetyCutoff,
+    toggleMainSupply
   } = useMeter();
 
   const [tariffRate, setTariffRate] = useState<number>(meterData.tariff_rate);
@@ -125,6 +128,83 @@ export const SettingsScreen: React.FC = () => {
         <p className="text-xs text-slate-500 dark:text-neutral-400">
           Protective cutoffs, Paystack tariff, and cloud telemetry endpoints
         </p>
+      </div>
+
+      {/* 0. HARDWARE MAINS POWER CONTACTOR RELAY (PIN D27) */}
+      <div className={`glass-card p-5 transition-all duration-300 border ${
+        meterData.main_supply_connected 
+          ? 'border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/15' 
+          : 'border-rose-500/40 bg-rose-50/50 dark:bg-rose-950/15'
+      } space-y-4`}>
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200/70 dark:border-neutral-800">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-2xl transition-colors ${
+              meterData.main_supply_connected
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
+                : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+            }`}>
+              <Power className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                  Mains Power Supply (Relay D27)
+                </h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-neutral-200/70 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+                  Low-Level Trigger
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-neutral-400">
+                Remote master contactor switch for whole-house mains and test bulb
+              </p>
+            </div>
+          </div>
+
+          <span className={`text-[11px] font-black px-3 py-1 rounded-full border transition-colors ${
+            meterData.main_supply_connected
+              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+              : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
+          }`}>
+            {meterData.main_supply_connected ? '● MAINS ON (D27 LOW)' : '○ MAINS OFF (D27 HIGH)'}
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-neutral-200">
+              <Lightbulb className={`w-4 h-4 ${meterData.main_supply_connected ? 'text-amber-500 fill-amber-400 animate-pulse' : 'text-slate-400'}`} />
+              <span>
+                {meterData.main_supply_connected
+                  ? 'Contactor is CLOSED. Pin D27 is LOW — bulb and connected appliances are ON.'
+                  : 'Contactor is OPEN. Pin D27 is HIGH — bulb and household power are cut off.'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 dark:text-neutral-500">
+              Clicking the switch below updates Supabase instantly; the ESP32 receives the command on the next heartbeat and flips the relay.
+            </p>
+          </div>
+
+          <button
+            onClick={toggleMainSupply}
+            disabled={isTripped}
+            className={`px-5 py-2.5 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer shrink-0 ${
+              isTripped
+                ? 'bg-neutral-300 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                : meterData.main_supply_connected
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+            }`}
+          >
+            <Power className="w-4 h-4" />
+            <span>
+              {isTripped
+                ? 'Locked by Safety Trip'
+                : meterData.main_supply_connected
+                  ? 'Turn Off Mains (Disconnect)'
+                  : 'Turn On Mains (Connect)'}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* 1. PROTECTIVE SAFETY CUTOFFS CARD (REAL PHYSICAL METERS) */}

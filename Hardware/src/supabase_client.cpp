@@ -52,7 +52,11 @@ SupabaseSyncResult SupabaseClient::sendTelemetry(const char *meterId, const Sens
 
     if (!error) {
       result.success = true;
-      result.mainSupplyConnected = resDoc["main_supply_connected"] | true;
+      if (resDoc.containsKey("main_supply_connected")) {
+        result.mainSupplyConnected = resDoc["main_supply_connected"].as<bool>();
+      } else {
+        result.mainSupplyConnected = true;
+      }
       result.prepaidUnitsKwh = resDoc["prepaid_units_kwh"] | 0.0f;
     } else {
       result.errorMessage = "Failed to parse JSON response";

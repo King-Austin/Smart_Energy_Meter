@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import {
   MeterTelemetry,
   SharingSession,
@@ -111,6 +111,8 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [isSimPanelOpen, setIsSimPanelOpen] = useState<boolean>(false);
 
+  const lastUserToggleTimeRef = useRef<number>(0);
+
   // Endpoint configuration
   const [apiEndpointUrl, setApiEndpointUrlState] = useState<string>(
     window.location.origin + '/api'
@@ -174,10 +176,17 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Subscribe to real-time changes emitted by ESP32 or simulate_monitoring.js
     const meterChannel = subscribeToMeterUpdates(meterData.meter_id, (updated) => {
       if (!isMounted) return;
-      setMeterData(prev => ({
-        ...prev,
-        ...updated
-      }));
+      setMeterData(prev => {
+        // Prevent in-flight telemetry updates from overriding an active user toggle!
+        const isUserToggling = Date.now() - lastUserToggleTimeRef.current < 4000;
+        return {
+          ...prev,
+          ...updated,
+          main_supply_connected: isUserToggling 
+            ? prev.main_supply_connected 
+            : (updated.main_supply_connected ?? prev.main_supply_connected)
+        };
+      });
     });
 
     const logsChannel = subscribeToTelemetryLogs(meterData.meter_id, (newLog) => {
@@ -190,7 +199,6 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         power_factor: Number(newLog.power_factor ?? prev.power_factor),
         frequency: Number(newLog.frequency ?? prev.frequency),
         is_tampered: newLog.is_tampered ?? prev.is_tampered,
-        main_supply_connected: newLog.is_relay_on ?? prev.main_supply_connected,
         last_seen: newLog.created_at ?? new Date().toISOString()
       }));
     });
@@ -701,7 +709,7 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
   };
 
-  const toggleMainSupply = () => {
+  const toggleMainSupply = async () => {
     if (meterData.device_status === 'offline') {
       addNotification('Offline Safety Block', 'Cannot toggle relay: Meter is disconnected from cloud.', 'offline');
       return;
@@ -717,20 +725,29 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return;
     }
 
-    setMeterData(prev => {
-      const nextState = !prev.main_supply_connected;
-      toggleRemoteSupplyRelay(prev.meter_id, nextState);
-      addNotification(
-        nextState ? 'Main Supply Restored' : 'Main Supply Disconnected',
-        nextState ? 'Whole-house electrical supply connected.' : 'Whole-house electricity disconnect initiated by user.',
-        'warning'
-      );
-      return {
-        ...prev,
-        main_supply_connected: nextState,
-        active_power: nextState ? 2.46 : 0
-      };
-    });
+    const nextState = !meterData.main_supply_connected;
+    lastUserToggleTimeRef.current = Date.now();
+
+    // 1. Optimistic instant UI update
+    setMeterData(prev => ({
+      ...prev,
+      main_supply_connected: nextState,
+      active_power: nextState ? prev.active_power : 0
+    }));
+
+    addNotification(
+      nextState ? 'Main Supply Restored' : 'Main Supply Disconnected',
+      nextState ? 'Whole-house electrical supply connected.' : 'Whole-house electricity disconnect initiated by user.',
+      'warning'
+    );
+
+    // 2. Persist to Supabase asynchronously outside state setter
+    const success = await toggleRemoteSupplyRelay(meterData.meter_id, nextState);
+    if (!success) {
+      lastUserToggleTimeRef.current = 0;
+      setMeterData(prev => ({ ...prev, main_supply_connected: !nextState }));
+      addNotification('Relay Sync Error', 'Failed to update relay state in cloud.', 'warning');
+    }
   };
 
   const setTariff = (rate: number, currencyCode: string, currencySymbol: string) => {

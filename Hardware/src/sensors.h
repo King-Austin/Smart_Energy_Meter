@@ -7,6 +7,7 @@ class SensorManager {
 public:
   void begin();
   void readSensors(SensorReadings &readings, bool simulationMode = false);
+  float readTrueRMSVoltage(uint16_t sampleCycles = 5);
   bool checkTamperConditions(MeterState &state, const SensorReadings &readings);
   void triggerTamper(MeterState &state, TamperType type);
   void clearTamper(MeterState &state);
@@ -14,6 +15,7 @@ public:
 private:
   float simVoltage = 230.0f;
   float simCurrent = 5.2f;
+  float lastDcBias = 1.65f;
 };
 
 extern SensorManager Sensors;

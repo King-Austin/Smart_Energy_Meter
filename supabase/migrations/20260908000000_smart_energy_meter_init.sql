@@ -139,7 +139,6 @@ BEGIN
     power_factor = COALESCE(p_power_factor, meters.power_factor),
     frequency = COALESCE(p_frequency, meters.frequency),
     is_tampered = EXCLUDED.is_tampered,
-    main_supply_connected = EXCLUDED.main_supply_connected,
     device_status = 'online',
     last_seen = now(),
     updated_at = now()
