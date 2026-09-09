@@ -168,7 +168,53 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [recipients, setRecipients] = useState<RegisteredRecipient[]>(REGISTERED_RECIPIENTS);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>(INITIAL_WALLET_TRANSACTIONS);
-  const [activeTab, setActiveTab] = useState<ActiveTab>('home');
+  const parseRouteToTab = (routeStr: string): ActiveTab => {
+    const clean = routeStr.replace(/^[#/]+/, '').toLowerCase();
+    if (clean === 'admin' || clean === 'fleet') return 'admin';
+    if (clean === 'energy') return 'energy';
+    if (clean === 'wallet') return 'wallet';
+    if (clean === 'share') return 'share';
+    if (clean === 'settings') return 'settings';
+    if (clean === 'device') return 'device';
+    if (clean === 'auth') return 'auth';
+    return 'home';
+  };
+
+  const getInitialTab = (): ActiveTab => {
+    if (typeof window === 'undefined') return 'home';
+    const hash = window.location.hash;
+    const path = window.location.pathname;
+    if (hash && hash !== '#') return parseRouteToTab(hash);
+    if (path && path !== '/') return parseRouteToTab(path);
+    return 'home';
+  };
+
+  const [activeTab, setActiveTabState] = useState<ActiveTab>(getInitialTab);
+
+  const setActiveTab = useCallback((tab: ActiveTab) => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      window.location.hash = `#${tab}`;
+    }
+  }, []);
+
+  // Sync hash/URL on popstate / hashchange
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const hash = window.location.hash;
+      const path = window.location.pathname;
+      const newTab = parseRouteToTab(hash || path);
+      setActiveTabState(newTab);
+    };
+
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, []);
+
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [isSimPanelOpen, setIsSimPanelOpen] = useState<boolean>(false);

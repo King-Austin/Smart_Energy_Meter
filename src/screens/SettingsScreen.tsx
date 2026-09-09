@@ -23,7 +23,8 @@ import {
   AlertTriangle,
   RotateCcw,
   Power,
-  Lightbulb
+  Lightbulb,
+  Building2
 } from 'lucide-react';
 
 export const SettingsScreen: React.FC = () => {
@@ -677,6 +678,29 @@ export const SettingsScreen: React.FC = () => {
               </button>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Admin Fleet Command Portal Link */}
+      <div className="glass-card p-4 border-amber-500/30 bg-amber-500/5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Building2 className="w-5 h-5 text-amber-500" />
+            <div>
+              <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
+                Admin Fleet Command Center
+              </h3>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                Multi-meter facility management, contactor cutoffs & bulk tariffs
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab('admin')}
+            className="btn-primary text-xs py-2 px-3 bg-amber-500 hover:bg-amber-600 border-amber-400"
+          >
+            Open Admin
+          </button>
         </div>
       </div>
 

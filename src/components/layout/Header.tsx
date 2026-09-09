@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMeter } from '../../context/MeterContext';
-import { Bell, Moon, Sun, Sliders, ZapOff, WifiOff } from 'lucide-react';
+import { Bell, Moon, Sun, Sliders, ZapOff, WifiOff, Building2 } from 'lucide-react';
 
 interface HeaderProps {
   onOpenNotifications: () => void;
@@ -13,6 +13,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
     toggleTheme,
     unreadNotificationCount,
     setIsSimPanelOpen,
+    activeTab,
     setActiveTab
   } = useMeter();
 
@@ -72,6 +73,21 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
 
         {/* Right: Utility & Theme Controls */}
         <div className="flex items-center gap-1">
+          {/* Admin Fleet Portal Quick Link */}
+          <button
+            onClick={() => setActiveTab('admin')}
+            className={`p-2.5 rounded-2xl transition-colors relative ${
+              activeTab === 'admin'
+                ? 'bg-[#ff5b26]/15 text-[#ff5b26] font-bold'
+                : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
+            }`}
+            title="Admin Fleet Command Center"
+            aria-label="Open Admin Fleet Portal"
+          >
+            <Building2 className="w-4 h-4 text-[#ff5b26]" />
+            <span className="sr-only">Admin Fleet</span>
+          </button>
+
           {/* Demo Simulation Controller Toggle */}
           <button
             onClick={() => setIsSimPanelOpen(true)}
