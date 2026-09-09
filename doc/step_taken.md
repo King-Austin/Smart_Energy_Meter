@@ -231,3 +231,31 @@ When you are ready to couple the physical hardware tomorrow, follow the step-by-
 - [ ] **Admin PIN Unlock Test**: In web app Tamper Modal, enter PIN `1234` -> verify tamper clears, buzzer stops, and contactor re-energizes.
 - [ ] **Blackout Simulation**: Disconnect AC mains input -> verify ESP32 stays alive on 18650 battery and transmits 0V outage event.
 - [ ] **Wi-Fi Recovery Test**: Disconnect Wi-Fi router for 2 minutes -> verify records accumulate in LittleFS -> reconnect Wi-Fi and verify batch sync completes with no data loss.
+
+---
+
+## 🚀 Phase 4: Route Separation, Client Inspector & Groq AI (Completed & Verified)
+
+### 4.1 Strict Route Separation (Client vs Super Admin)
+- **URL Routing**: Handled cleanly via `#/admin` vs `#/` with full browser history support (`hashchange` & `popstate`).
+- **Client Dashboard (`#/` / `#/client`)**:
+  - Exclusively tailored to the tenant / consumer occupying that submeter.
+  - Zero admin interference: admin tabs, bulk buttons, and multi-meter pickers are removed from the client's bottom navigation.
+  - Client navigation strictly contains: `Home`, `Energy`, `Wallet`, `Share`, `Settings`.
+  - In `Settings`, an authorized manager can switch to the Super Admin Portal.
+- **Super Admin Dashboard (`#/admin`)**:
+  - Full-width enterprise command center (`max-w-7xl` desktop canvas).
+  - Can view **all submeters** ("submitters") across all apartments/flats with live kW, V, A, PF, Hz, relay state, and tamper status.
+  - **Live Client Dashboard Inspector**: The Super Admin can click **"👁️ Inspect Client View"** on any submeter to view that client's complete live dashboard (power flow, hourly/daily graphs in ₦, wallet, budget, outage history) within an admin inspection frame with 1-click return.
+
+### 4.2 Light Mode Branding by Default
+- Default theme initialized to `'light'` with persistent `localStorage` sync.
+- Light palette: `#f8f9fb` canvas, `#ffffff` glass cards with subtle `#e2e8f0` borders, deep `#0f172a` primary text, `#64748b` muted text, and vibrant Voltrix burnt orange (`#ff5b26`) brand accents.
+- Dynamic `#root` styling: centers as a sleek 440px phone container in Client view, but dynamically expands to 1440px wide enterprise layout in Super Admin view.
+
+### 4.3 Groq AI Energy Advisor Integration
+- Integrated Groq LPU API (`https://api.groq.com/openai/v1/chat/completions`) using `llama-3.3-70b-versatile` (and `llama-3.1-8b-instant`).
+- Reads API key from `localStorage.getItem('voltrix_groq_api_key')` or `VITE_GROQ_API_KEY`.
+- Built-in API Key configuration panel directly inside the **AIAssistantDrawer** header (expandable with status badge `Groq ⚡`).
+- Sub-second (<300ms) responses tailored to the Nigerian electricity context (Naira ₦, Band tariffs, gen/inverter trade-offs, appliance load shedding).
+- Inline AI cards removed from the client's home screen to maintain maximum clean code quality and zero clutter.
