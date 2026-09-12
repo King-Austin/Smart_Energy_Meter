@@ -1,50 +1,94 @@
 import React, { useState, useEffect } from 'react';
 import { useMeter } from '../context/MeterContext';
 import { EnergyPeriod } from '../types/meter';
-import { HOURLY_DATA, WEEKLY_DATA, MONTHLY_DATA } from '../services/mockData';
-import { fetchHourlyUsageFromDB } from '../services/supabase';
+import {
+  fetchHourlyUsageFromDB,
+  fetchDailyUsageFromDB,
+  fetchRecentTelemetryLogs
+} from '../services/supabase';
 import { OutageHistoryCard } from '../components/energy/OutageHistoryCard';
 import {
   BarChart3,
-  TrendingDown,
   Zap,
   ShieldCheck,
   Activity,
   Gauge,
-  Power
+  Power,
+  Radio,
+  Clock,
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 
 export const EnergyScreen: React.FC = () => {
   const { meterData } = useMeter();
   const [period, setPeriod] = useState<EnergyPeriod>('today');
-  const [dbHourlyData, setDbHourlyData] = useState<{ hourLabel: string; kwh: number; cost: number }[] | null>(null);
+  const [chartMode, setChartMode] = useState<'seconds' | 'hourly' | 'daily'>('seconds');
+
+  const [dbHourlyData, setDbHourlyData] = useState<{ hourLabel: string; kwh: number; watts: number; cost: number }[] | null>(null);
+  const [dbDailyData, setDbDailyData] = useState<{ dayLabel: string; kwh: number; cost: number }[] | null>(null);
+  const [recentLogs, setRecentLogs] = useState<Array<{ timeStr: string; watts: number; kw: number; voltage: number; current: number; isRelayOn: boolean }>>([]);
   const [isLoadingDB, setIsLoadingDB] = useState(false);
 
+  // Initial load for aggregated tables
   useEffect(() => {
     let isMounted = true;
     const loadUsage = async () => {
       setIsLoadingDB(true);
-      const data = await fetchHourlyUsageFromDB(meterData.meter_id, meterData.tariff_rate);
-      if (isMounted && data && data.length > 0) {
-        setDbHourlyData(data);
+      const [hourly, daily] = await Promise.all([
+        fetchHourlyUsageFromDB(meterData.meter_id, meterData.tariff_rate),
+        fetchDailyUsageFromDB(meterData.meter_id, meterData.tariff_rate)
+      ]);
+      if (isMounted) {
+        if (hourly) setDbHourlyData(hourly);
+        if (daily) setDbDailyData(daily);
+        setIsLoadingDB(false);
       }
-      if (isMounted) setIsLoadingDB(false);
     };
     loadUsage();
     return () => { isMounted = false; };
   }, [meterData.meter_id, meterData.tariff_rate]);
 
-  const activeHourlyData = (dbHourlyData && dbHourlyData.length >= 4) ? dbHourlyData : HOURLY_DATA;
+  // Live 2.5-second polling for real-time seconds telemetry stream
+  useEffect(() => {
+    let isMounted = true;
+    const pollSeconds = async () => {
+      const logs = await fetchRecentTelemetryLogs(meterData.meter_id, 12);
+      if (isMounted && logs && logs.length > 0) {
+        setRecentLogs(logs);
+      }
+    };
 
-  // Calculation helpers
-  const maxHourlyKwh = Math.max(...activeHourlyData.map(d => d.kwh), 0.1);
-  const maxWeeklyKwh = Math.max(...WEEKLY_DATA.map(d => d.kwh), 0.1);
-  const maxMonthlyKwh = Math.max(...MONTHLY_DATA.map(d => d.kwh), 0.1);
+    pollSeconds();
+    const interval = setInterval(pollSeconds, 2500);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [meterData.meter_id]);
 
-  const peakHourlyEntry = activeHourlyData.reduce((prev, curr) => (curr.kwh > prev.kwh ? curr : prev), activeHourlyData[0]);
+  // Data helpers
+  const activeHourlyData = dbHourlyData || [];
+  const activeDailyData = dbDailyData || [];
+
+  const maxSecondsWatts = recentLogs.length > 0
+    ? Math.max(...recentLogs.map(l => l.watts), 15)
+    : 20;
+
+  const maxHourlyKwh = activeHourlyData.length > 0
+    ? Math.max(...activeHourlyData.map(d => d.kwh), 0.05)
+    : 0.1;
+
+  const maxDailyKwh = activeDailyData.length > 0
+    ? Math.max(...activeDailyData.map(d => d.kwh), 0.1)
+    : 1.0;
+
+  const peakHourlyEntry = activeHourlyData.length > 0
+    ? activeHourlyData.reduce((prev, curr) => (curr.kwh > prev.kwh ? curr : prev), activeHourlyData[0])
+    : null;
 
   return (
-    <div className="space-y-4 pb-10 animate-fade-in">
+    <div className="space-y-4 pb-12 animate-fade-in max-w-2xl mx-auto">
       
       {/* Header & Segmented Timeframe Switcher */}
       <div className="flex items-center justify-between">
@@ -53,7 +97,7 @@ export const EnergyScreen: React.FC = () => {
             Energy Usage
           </h2>
           <p className="text-xs text-slate-500 dark:text-neutral-400">
-            Realtime consumption telemetry & hourly load demand
+            Real-time telemetry stream & live hardware power analytics
           </p>
         </div>
 
@@ -62,8 +106,12 @@ export const EnergyScreen: React.FC = () => {
           {(['today', 'week', 'month'] as EnergyPeriod[]).map(p => (
             <button
               key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 rounded-xl font-bold capitalize transition-all ${
+              onClick={() => {
+                setPeriod(p);
+                if (p === 'today') setChartMode('hourly');
+                if (p === 'week') setChartMode('daily');
+              }}
+              className={`px-3 py-1.5 rounded-xl font-bold capitalize transition-all cursor-pointer ${
                 period === p
                   ? 'bg-white dark:bg-neutral-900 text-slate-900 dark:text-white shadow-2xs'
                   : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
@@ -75,11 +123,11 @@ export const EnergyScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Total Used Card (Reference Design Pattern) */}
+      {/* Main Total Used Card */}
       <div className="glass-card p-5 relative overflow-hidden">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-neutral-400">
-            Total Used
+            Total Measured Energy
           </span>
           <div className="p-2 rounded-xl bg-[#ff5b26]/12 text-[#ff5b26]">
             <Zap className="w-4 h-4 fill-current" />
@@ -99,18 +147,16 @@ export const EnergyScreen: React.FC = () => {
 
         <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
           {period === 'today'
-            ? 'Today’s measured consumption across your main line'
+            ? 'Today’s live measured consumption from PZEM-004T (GPIO 16/17)'
             : period === 'week'
-            ? 'Past 7 days aggregated household consumption'
-            : 'Monthly usage across all connected circuits'}
+            ? 'Past 7 days aggregated hardware consumption'
+            : 'Monthly cumulative energy stored in non-volatile flash'}
         </p>
 
         <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-200/80 dark:border-neutral-800 text-xs font-semibold">
-          <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-            <TrendingDown className="w-4 h-4" />
-            <span>
-              {period === 'today' ? '12% less than yesterday' : period === 'week' ? '8% lower vs last week' : 'Normal consumption pace'}
-            </span>
+          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+            <Radio className="w-3.5 h-3.5 animate-pulse" />
+            <span>Live Prototype Telemetry Active</span>
           </div>
 
           <span className="font-bold text-slate-900 dark:text-white mono-num">
@@ -124,8 +170,8 @@ export const EnergyScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Meter Transparency Metrics (Replacing Fake Eco Mode) */}
-      <div className="grid grid-cols-2 gap-2.5">
+      {/* Meter Live Electrical Load Metrics */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <div className="p-3.5 rounded-2xl bg-white dark:bg-[#151b25] border border-slate-200 dark:border-neutral-800 shadow-2xs">
           <div className="flex items-center gap-2 mb-1.5">
             <Gauge className="w-4 h-4 text-[#ff5b26]" />
@@ -134,10 +180,10 @@ export const EnergyScreen: React.FC = () => {
             </span>
           </div>
           <span className="text-xl font-black text-slate-900 dark:text-white mono-num block">
-            {peakHourlyEntry ? `${peakHourlyEntry.kwh.toFixed(2)} kW` : `${meterData.active_power.toFixed(2)} kW`}
+            {peakHourlyEntry && peakHourlyEntry.kwh > 0 ? `${(peakHourlyEntry.watts).toFixed(0)} W` : `${(meterData.active_power * 1000).toFixed(0)} W`}
           </span>
-          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block">
-            Recorded at {peakHourlyEntry ? peakHourlyEntry.hourLabel : 'recent peak'}
+          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block truncate">
+            {peakHourlyEntry && peakHourlyEntry.kwh > 0 ? `At ${peakHourlyEntry.hourLabel}` : 'Live active draw'}
           </span>
         </div>
 
@@ -145,31 +191,31 @@ export const EnergyScreen: React.FC = () => {
           <div className="flex items-center gap-2 mb-1.5">
             <Activity className="w-4 h-4 text-emerald-500" />
             <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
-              Average Load
+              Power Factor
             </span>
           </div>
           <span className="text-xl font-black text-slate-900 dark:text-white mono-num block">
-            {(meterData.active_power * 0.72).toFixed(2)} kW
+            {meterData.power_factor > 0 ? meterData.power_factor.toFixed(2) : '1.00'}
           </span>
-          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
-            Current: {meterData.active_power.toFixed(2)} kW live
+          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block truncate">
+            Freq: {meterData.frequency.toFixed(1)} Hz
           </span>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-white dark:bg-[#151b25] border border-slate-200 dark:border-neutral-800 shadow-2xs">
           <div className="flex items-center gap-2 mb-1.5">
-            <Power className={`w-4 h-4 ${meterData.main_supply_connected ? 'text-emerald-500' : 'text-rose-500'}`} />
+            <Power className="w-4 h-4 text-[#ff5b26]" />
             <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
-              Contactor Relay
+              Mains Relay (D13)
             </span>
           </div>
-          <span className={`text-base font-black mono-num block ${
+          <span className={`text-sm font-black mono-num block ${
             meterData.main_supply_connected ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'
           }`}>
-            {meterData.main_supply_connected ? 'CLOSED (Supplying)' : 'OPEN (Cutoff)'}
+            {meterData.main_supply_connected ? 'CLOSED (ON)' : 'OPEN (OFF)'}
           </span>
-          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block">
-            Safety contactor status
+          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block truncate">
+            {meterData.hardware_relay_ack ? 'Hardware Confirmed' : 'Syncing state...'}
           </span>
         </div>
 
@@ -177,145 +223,249 @@ export const EnergyScreen: React.FC = () => {
           <div className="flex items-center gap-2 mb-1.5">
             <ShieldCheck className="w-4 h-4 text-[#ff5b26]" />
             <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
-              Protective Guard
+              Voltage Guard
             </span>
           </div>
-          <span className="text-base font-black text-slate-900 dark:text-white mono-num block">
+          <span className="text-sm font-black text-slate-900 dark:text-white mono-num block">
             {meterData.min_voltage_limit}V – {meterData.max_voltage_limit}V
           </span>
-          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block">
-            Auto-cutoff enabled
+          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block truncate">
+            Grid: {meterData.voltage.toFixed(1)}V
           </span>
         </div>
       </div>
 
-      {/* Usage Overview Bar Chart (Two-Tone Grey/Burnt Orange Pattern) */}
+      {/* Multi-Bar Graph: Live Usage Overview */}
       <div className="glass-card p-5 space-y-4">
-        <div className="flex items-center justify-between">
+        {/* Card Header & View Mode Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-[#ff5b26]" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-neutral-400">
-              Usage Overview {isLoadingDB && <span className="text-[10px] lowercase font-normal">(syncing DB...)</span>}
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-neutral-300">
+              Live Usage Overview {isLoadingDB && <span className="text-[10px] lowercase font-normal">(syncing DB...)</span>}
             </h3>
           </div>
 
-          {/* Two-Tone Legend */}
-          <div className="flex items-center gap-3 text-[11px] font-bold">
-            <div className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400">
-              <span className="w-2.5 h-2.5 rounded-sm bg-slate-300 dark:bg-neutral-700"></span>
-              <span>Normal Use</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[#ff5b26]">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[#ff5b26]"></span>
-              <span>Peak Demand</span>
-            </div>
+          {/* Granularity Switcher: Seconds | Hourly | Daily */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-neutral-850 rounded-xl border border-slate-200 dark:border-neutral-800 text-[11px] font-bold">
+            <button
+              onClick={() => setChartMode('seconds')}
+              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                chartMode === 'seconds'
+                  ? 'bg-[#ff5b26] text-white shadow-xs'
+                  : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Seconds (Live)</span>
+            </button>
+            <button
+              onClick={() => setChartMode('hourly')}
+              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                chartMode === 'hourly'
+                  ? 'bg-[#ff5b26] text-white shadow-xs'
+                  : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Clock className="w-3 h-3" />
+              <span>Hourly (24h)</span>
+            </button>
+            <button
+              onClick={() => setChartMode('daily')}
+              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                chartMode === 'daily'
+                  ? 'bg-[#ff5b26] text-white shadow-xs'
+                  : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Calendar className="w-3 h-3" />
+              <span>Daily (7d)</span>
+            </button>
           </div>
         </div>
 
-        {/* 1. Hourly View */}
-        {period === 'today' && (
+        {/* Legend */}
+        <div className="flex items-center justify-between text-[11px] font-semibold pt-1 border-b border-slate-100 dark:border-neutral-800/80 pb-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400">
+              <span className="w-2.5 h-2.5 rounded-xs bg-slate-300 dark:bg-neutral-700"></span>
+              <span>Baseline / Idle</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[#ff5b26]">
+              <span className="w-2.5 h-2.5 rounded-xs bg-gradient-to-t from-orange-600 to-[#ff5b26]"></span>
+              <span>Active Load Draw</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-mono text-[10px]">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span>2s Auto-Refresh</span>
+          </div>
+        </div>
+
+        {/* ========================================================= */}
+        {/* VIEW 1: SECONDS (LIVE REAL-TIME STREAMING TELEMETRY BARS) */}
+        {/* ========================================================= */}
+        {chartMode === 'seconds' && (
           <div className="space-y-2">
-            <div className="h-44 flex items-end justify-between gap-1.5 pt-4">
+            <div className="h-44 flex items-end justify-between gap-1.5 sm:gap-2 pt-4 px-1">
+              {recentLogs.length > 0 ? (
+                recentLogs.map((log, i) => {
+                  const heightPct = log.watts > 0
+                    ? Math.max(14, Math.min(100, Math.round((log.watts / maxSecondsWatts) * 100)))
+                    : 8;
+                  const isHigh = log.watts >= maxSecondsWatts * 0.75 && log.watts > 0;
+
+                  return (
+                    <div
+                      key={i}
+                      className="flex-1 flex flex-col items-center gap-1 group relative max-w-[28px]"
+                    >
+                      {/* Rich Floating Tooltip */}
+                      <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -top-12 z-20 px-2 py-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold rounded shadow-lg whitespace-nowrap transition-opacity">
+                        {log.timeStr} • {log.watts}W ({log.voltage.toFixed(1)}V)
+                      </div>
+
+                      {/* Bar Track & Fill */}
+                      <div className="w-full h-32 bg-slate-100 dark:bg-neutral-800/80 rounded-t-md flex items-end justify-center p-0.5">
+                        <div
+                          style={{ height: `${heightPct}%` }}
+                          className={`w-full rounded-t-xs transition-all duration-300 ${
+                            isHigh
+                              ? 'bg-gradient-to-t from-orange-600 to-[#ff5b26] shadow-xs'
+                              : log.watts > 0
+                              ? 'bg-gradient-to-t from-amber-500 to-orange-400'
+                              : 'bg-slate-300 dark:bg-neutral-700 min-h-[4px]'
+                          }`}
+                        />
+                      </div>
+
+                      <span className="text-[8px] sm:text-[9px] text-slate-400 font-mono font-medium truncate w-full text-center">
+                        {log.timeStr.slice(3)}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="w-full h-32 flex items-center justify-center text-slate-400 text-xs">
+                  Streaming incoming telemetry...
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-neutral-400 pt-2 border-t border-slate-200 dark:border-neutral-800 font-medium">
+              <span>Streaming 12 real-time snapshots from submeter {meterData.meter_id}</span>
+              <span className="font-mono text-slate-800 dark:text-neutral-200">
+                Current: {(meterData.active_power * 1000).toFixed(0)}W
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* VIEW 2: HOURLY (12 DISTINCT TWO-HOUR COLUMNS ACROSS 24H)   */}
+        {/* ========================================================= */}
+        {chartMode === 'hourly' && (
+          <div className="space-y-2">
+            <div className="h-44 flex items-end justify-between gap-1.5 sm:gap-2.5 pt-4 px-1">
               {activeHourlyData.map((h, i) => {
-                const heightPercent = Math.max(10, (h.kwh / maxHourlyKwh) * 100);
-                const isPeak = h.kwh >= maxHourlyKwh * 0.8;
+                const heightPct = h.kwh > 0
+                  ? Math.max(14, Math.min(100, Math.round((h.kwh / maxHourlyKwh) * 100)))
+                  : 8;
+                const isPeak = h.kwh >= maxHourlyKwh * 0.85 && h.kwh > 0;
 
                 return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-                    <div className="w-full h-32 flex items-end justify-center">
-                      <div
-                        style={{ height: `${heightPercent}%` }}
-                        className={`w-full rounded-t-md transition-all ${
-                          isPeak
-                            ? 'bg-[#ff5b26] shadow-xs'
-                            : 'bg-slate-300 dark:bg-neutral-700 hover:bg-slate-400'
-                        }`}
-                      ></div>
+                  <div
+                    key={i}
+                    className="flex-1 flex flex-col items-center gap-1 group relative max-w-[36px]"
+                  >
+                    {/* Tooltip */}
+                    <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -top-12 z-20 px-2 py-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold rounded shadow-lg whitespace-nowrap transition-opacity">
+                      {h.hourLabel} • {h.kwh.toFixed(2)} kWh (₦{h.cost})
                     </div>
-                    <span className="text-[9px] text-slate-500 font-bold truncate w-full text-center">
-                      {h.hourLabel.replace(' ', '')}
+
+                    {/* Bar Track & Fill */}
+                    <div className="w-full h-32 bg-slate-100 dark:bg-neutral-800/80 rounded-t-md flex items-end justify-center p-0.5">
+                      <div
+                        style={{ height: `${heightPct}%` }}
+                        className={`w-full rounded-t-xs transition-all ${
+                          isPeak
+                            ? 'bg-gradient-to-t from-orange-600 to-[#ff5b26] shadow-xs'
+                            : h.kwh > 0
+                            ? 'bg-gradient-to-t from-amber-500 to-orange-400'
+                            : 'bg-slate-300/60 dark:bg-neutral-700/60 min-h-[4px]'
+                        }`}
+                      />
+                    </div>
+
+                    <span className="text-[9px] text-slate-500 dark:text-neutral-400 font-bold truncate w-full text-center">
+                      {h.hourLabel}
                     </span>
                   </div>
                 );
               })}
             </div>
+
             <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-neutral-400 pt-2 border-t border-slate-200 dark:border-neutral-800 font-medium">
-              <span>Peak: {peakHourlyEntry ? `${peakHourlyEntry.hourLabel} (${peakHourlyEntry.kwh.toFixed(2)} kWh)` : '8 PM'}</span>
+              <span>Peak: {peakHourlyEntry && peakHourlyEntry.kwh > 0 ? `${peakHourlyEntry.hourLabel} (${peakHourlyEntry.kwh.toFixed(2)} kWh)` : 'Idle / Baseline'}</span>
               <span>Tariff: ₦{meterData.tariff_rate}/kWh</span>
             </div>
           </div>
         )}
 
-        {/* 2. Weekly View */}
-        {period === 'week' && (
+        {/* ========================================================= */}
+        {/* VIEW 3: DAILY (7 DISTINCT COLUMNS: MON - SUN)             */}
+        {/* ========================================================= */}
+        {chartMode === 'daily' && (
           <div className="space-y-2">
-            <div className="h-44 flex items-end justify-between gap-2 pt-4">
-              {WEEKLY_DATA.map((d, i) => {
-                const heightPercent = Math.max(12, (d.kwh / maxWeeklyKwh) * 100);
-                const isPeak = d.kwh >= maxWeeklyKwh * 0.85;
+            <div className="h-44 flex items-end justify-between gap-3 sm:gap-5 pt-4 px-2">
+              {activeDailyData.map((d, i) => {
+                const heightPct = d.kwh > 0
+                  ? Math.max(14, Math.min(100, Math.round((d.kwh / maxDailyKwh) * 100)))
+                  : 8;
+                const isPeak = d.kwh >= maxDailyKwh * 0.85 && d.kwh > 0;
 
                 return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-                    <div className="w-full h-32 flex items-end justify-center">
-                      <div
-                        style={{ height: `${heightPercent}%` }}
-                        className={`w-full rounded-t-lg transition-all ${
-                          isPeak
-                            ? 'bg-[#ff5b26] shadow-xs'
-                            : 'bg-slate-300 dark:bg-neutral-700 hover:bg-slate-400'
-                        }`}
-                      ></div>
+                  <div
+                    key={i}
+                    className="flex-1 flex flex-col items-center gap-1 group relative max-w-[48px]"
+                  >
+                    {/* Tooltip */}
+                    <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -top-12 z-20 px-2 py-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-bold rounded shadow-lg whitespace-nowrap transition-opacity">
+                      {d.dayLabel} • {d.kwh.toFixed(1)} kWh (₦{d.cost})
                     </div>
-                    <span className={`text-[10px] font-bold ${isPeak ? 'text-[#ff5b26]' : 'text-slate-500 dark:text-neutral-400'}`}>
+
+                    {/* Bar Track & Fill */}
+                    <div className="w-full h-32 bg-slate-100 dark:bg-neutral-800/80 rounded-t-lg flex items-end justify-center p-1">
+                      <div
+                        style={{ height: `${heightPct}%` }}
+                        className={`w-full rounded-t-md transition-all ${
+                          isPeak
+                            ? 'bg-gradient-to-t from-orange-600 to-[#ff5b26] shadow-xs'
+                            : d.kwh > 0
+                            ? 'bg-gradient-to-t from-amber-500 to-orange-400'
+                            : 'bg-slate-300/60 dark:bg-neutral-700/60 min-h-[6px]'
+                        }`}
+                      />
+                    </div>
+
+                    <span className="text-[11px] font-bold text-slate-600 dark:text-neutral-400 text-center">
                       {d.dayLabel}
                     </span>
                   </div>
                 );
               })}
             </div>
-            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-neutral-400 pt-2 border-t border-slate-200 dark:border-neutral-800 font-medium">
-              <span>Daily Avg: 8.7 kWh</span>
-              <span>Peak Day: Sat (11.2 kWh)</span>
-            </div>
-          </div>
-        )}
 
-        {/* 3. Monthly View */}
-        {period === 'month' && (
-          <div className="space-y-2">
-            <div className="h-44 flex items-end justify-between gap-2 pt-4">
-              {MONTHLY_DATA.map((m, i) => {
-                const heightPercent = Math.max(15, (m.kwh / maxMonthlyKwh) * 100);
-                const isPeak = m.kwh === maxMonthlyKwh;
-
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-                    <div className="w-full h-32 flex items-end justify-center">
-                      <div
-                        style={{ height: `${heightPercent}%` }}
-                        className={`w-full rounded-t-lg transition-all ${
-                          isPeak
-                            ? 'bg-[#ff5b26] shadow-xs'
-                            : 'bg-slate-300 dark:bg-neutral-700 hover:bg-slate-400'
-                        }`}
-                      ></div>
-                    </div>
-                    <span className={`text-[10px] font-bold ${isPeak ? 'text-[#ff5b26]' : 'text-slate-500 dark:text-neutral-400'}`}>
-                      {m.monthLabel}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
             <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-neutral-400 pt-2 border-t border-slate-200 dark:border-neutral-800 font-medium">
-              <span>Monthly Projected: {meterData.energy_month.toFixed(0)} kWh</span>
-              <span>Average Tariff: ₦{meterData.tariff_rate}/kWh</span>
+              <span>Weekly Total: {meterData.energy_week.toFixed(1)} kWh</span>
+              <span>Tariff: ₦{meterData.tariff_rate}/kWh</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Grid Blackout & Outage Forensics Card */}
+      {/* Grid Blackout & Outage Forensics Card (Pure DB Outage Logs) */}
       <OutageHistoryCard />
 
     </div>

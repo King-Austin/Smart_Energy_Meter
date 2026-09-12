@@ -72,6 +72,7 @@ export interface MeterTelemetry {
   battery_status: BatteryStatus;
   
   main_supply_connected: boolean;
+  hardware_relay_ack?: boolean;
   is_tampered?: boolean;
   tamper_locked?: boolean;
   last_seen: string;
@@ -127,6 +128,7 @@ export interface MeterSummary {
   grid_status: GridStatus;
   device_status: DeviceStatus;
   main_supply_connected: boolean;
+  hardware_relay_ack?: boolean;
   is_tampered: boolean;
   tamper_locked: boolean;
   wifi_rssi?: number;

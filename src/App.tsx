@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MeterProvider, useMeter } from './context/MeterContext';
 import { AppShell } from './components/layout/AppShell';
 import { HomeScreen } from './screens/HomeScreen';
@@ -10,8 +10,8 @@ import { DeviceDetailsScreen } from './screens/DeviceDetailsScreen';
 import { AuthScreen } from './screens/AuthScreen';
 import { TamperHistoryModal } from './components/notifications/TamperHistoryModal';
 import { AIAssistantDrawer } from './components/ai/AIAssistantDrawer';
-
 import { SuperAdminDashboard } from './screens/SuperAdminDashboard';
+import { initNativeMobileApp } from './services/nativeService';
 
 const MainNavigator: React.FC = () => {
   const { currentRoute, activeTab, isAuthenticated, isTamperModalOpen, setIsTamperModalOpen } = useMeter();
@@ -53,6 +53,10 @@ const MainNavigator: React.FC = () => {
 };
 
 export function App() {
+  useEffect(() => {
+    initNativeMobileApp();
+  }, []);
+
   return (
     <MeterProvider>
       <MainNavigator />

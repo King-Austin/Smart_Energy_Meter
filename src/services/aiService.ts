@@ -1,9 +1,32 @@
 import { MeterTelemetry, TamperEvent, OutageLog, AIInsightReport } from '../types/meter';
 
-const GEMINI_API_KEY =
-  (import.meta as any).env?.VITE_GEMINI_API_KEY ||
-  (import.meta as any).env?.GEMINI_API_KEY ||
-  '';
+export function getGeminiApiKey(): string {
+  if (typeof window !== 'undefined') {
+    const localKey = localStorage.getItem('voltrix_gemini_api_key');
+    if (localKey && localKey.trim()) return localKey.trim();
+  }
+  return (
+    (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+    (import.meta as any).env?.GEMINI_API_KEY ||
+    (import.meta as any).env?.GOOGLE_AI_API_KEY ||
+    (import.meta as any).env?.VITE_GOOGLE_AI_API_KEY ||
+    ''
+  );
+}
+
+export function setGeminiApiKey(key: string): void {
+  if (typeof window !== 'undefined') {
+    if (key && key.trim()) {
+      localStorage.setItem('voltrix_gemini_api_key', key.trim());
+    } else {
+      localStorage.removeItem('voltrix_gemini_api_key');
+    }
+  }
+}
+
+export function hasGeminiApiKey(): boolean {
+  return Boolean(getGeminiApiKey());
+}
 
 export function getGroqApiKey(): string {
   if (typeof window !== 'undefined') {
@@ -76,7 +99,8 @@ export async function generateAIInsights(
     `At ₦${meter.tariff_rate}/kWh, setting refrigerator thermostats to medium saves ~1.8 kWh (₦${Math.round(1.8 * meter.tariff_rate)}) daily.`
   ];
 
-  if (GEMINI_API_KEY) {
+  const geminiKey = getGeminiApiKey();
+  if (geminiKey) {
     try {
       const prompt = `You are Voltrix AI, an expert Nigerian smart energy meter advisor.
 Context:
@@ -88,7 +112,7 @@ Context:
 Generate 3 short, punchy, bulleted energy-saving tips tailored specifically for this Nigerian household to avoid exceeding their ₦${meter.monthly_budget_naira} budget. Return as JSON array of 3 strings.`;
 
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${geminiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -220,8 +244,9 @@ Provide a direct, concise, practical answer tailored to the Nigerian electricity
     }
   }
 
-  // 2. Gemini 1.5 Flash fallback
-  if (GEMINI_API_KEY) {
+  // 2. Gemini 1.5 / 2.0 Flash fallback
+  const geminiKey = getGeminiApiKey();
+  if (geminiKey) {
     try {
       const prompt = `You are the Voltrix Smart Energy Assistant for a submeter in Nigeria.
 Answer the user's question concisely in 2-3 short paragraphs using the following live telemetry context:
@@ -240,7 +265,7 @@ Answer the user's question concisely in 2-3 short paragraphs using the following
 User Question: "${query}"`;
 
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${geminiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

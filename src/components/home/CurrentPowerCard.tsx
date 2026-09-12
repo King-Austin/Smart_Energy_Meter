@@ -57,35 +57,47 @@ export const CurrentPowerCard: React.FC = () => {
         )}
       </div>
 
-      {/* Large Numerical Display (High contrast in Light and Dark modes) */}
+      {/* Large Numerical Display (Zero mock data - strictly live telemetry) */}
       <div className="my-2">
         <div className="flex items-baseline gap-2">
           <span className="text-5xl font-black tracking-tight text-slate-950 dark:text-white mono-num">
-            {isOffline ? '2.14' : power.toFixed(2)}
+            {meterData.voltage < 10 || isDisconnected ? '0' : (power < 1.0 ? (power * 1000).toFixed(0) : power.toFixed(2))}
           </span>
           <span className="text-2xl font-bold text-slate-600 dark:text-slate-400">
-            kW
+            {power < 1.0 ? 'W' : 'kW'}
           </span>
         </div>
 
         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">
           {isOffline
-            ? 'Live reading unavailable. Last seen a moment ago.'
+            ? 'Meter device offline / Cloud disconnected.'
             : isDisconnected
-            ? 'Whole-house main supply is disconnected.'
-            : `Your home is currently drawing ${power.toFixed(2)} kW`}
+            ? 'Contactor relay open: Whole-house power is cut (0.00 kW).'
+            : meterData.voltage < 10
+            ? 'AC Mains is DISCONNECTED (0.0V). Device running on backup battery.'
+            : `Live draw: ${power.toFixed(2)} kW (${meterData.current.toFixed(2)}A @ ${meterData.voltage.toFixed(0)}V)`}
         </p>
 
-        {/* Reconnect Action if Disconnected */}
-        {isDisconnected && (
+        {/* Remote Master Contactor Relay (D13) Live Hardware Switch */}
+        <div className="mt-3 flex items-center justify-between p-2.5 rounded-xl bg-slate-100/70 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-700/60">
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${isDisconnected ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+              Relay D13: {isDisconnected ? 'ISOLATED (OFF)' : 'CONNECTED (ON)'}
+            </span>
+          </div>
           <button
             onClick={toggleMainSupply}
-            className="mt-3 btn-primary text-xs py-2 px-3 flex items-center gap-1.5 shadow-sm"
+            className={`text-xs py-1.5 px-3 rounded-lg font-bold flex items-center gap-1.5 transition-all shadow-xs ${
+              isDisconnected
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 border border-rose-500/20'
+            }`}
           >
             <Power className="w-3.5 h-3.5" />
-            <span>Restore / Reconnect Power</span>
+            <span>{isDisconnected ? 'Turn Supply ON' : 'Turn Supply OFF'}</span>
           </button>
-        )}
+        </div>
       </div>
 
       {/* Usage State Badge & Sub-metric */}

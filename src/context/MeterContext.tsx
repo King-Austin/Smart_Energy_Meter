@@ -40,6 +40,11 @@ import {
   adminUpdateMeterConfig,
   adminBulkSetTariff
 } from '../services/supabase';
+import {
+  triggerHaptic,
+  sendNativeNotification,
+  listenToNetworkChanges
+} from '../services/nativeService';
 
 interface MeterContextType {
   meterData: MeterTelemetry;
@@ -287,6 +292,20 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // Notification API fallback
       }
     }
+
+    // Native Mobile Haptic Feedback & Push Notifications
+    if (type === 'tamper' || type === 'outage') {
+      triggerHaptic('error');
+      sendNativeNotification(`🚨 ${title}`, message);
+    } else if (type === 'restored' || type === 'wallet') {
+      triggerHaptic('success');
+      sendNativeNotification(`⚡ ${title}`, message);
+    } else if (type === 'warning') {
+      triggerHaptic('warning');
+      sendNativeNotification(`⚠️ ${title}`, message);
+    } else {
+      triggerHaptic('light');
+    }
   }, []);
 
   // Admin PIN verification
@@ -442,6 +461,7 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         power_factor: Number(newLog.power_factor ?? prev.power_factor),
         frequency: Number(newLog.frequency ?? prev.frequency),
         is_tampered: newLog.is_tampered ?? prev.is_tampered,
+        hardware_relay_ack: newLog.is_relay_on !== undefined ? Boolean(newLog.is_relay_on) : prev.hardware_relay_ack,
         last_seen: newLog.created_at ?? new Date().toISOString()
       }));
     });
@@ -452,7 +472,20 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }, [selectedMeterId, meterData.is_tampered, meterData.grid_status, addNotification, loadTamperAndOutages]);
 
-  // 5. Budget Progress & Month-End Run-Rate Projections
+  // 5. Native / Mobile Network Connectivity Monitor
+  useEffect(() => {
+    listenToNetworkChanges((status) => {
+      if (!status.connected) {
+        addNotification(
+          'Network Offline',
+          'Phone lost internet. Operating in offline cache / direct LAN fallback mode.',
+          'warning'
+        );
+      }
+    });
+  }, [addNotification]);
+
+  // 6. Budget Progress & Month-End Run-Rate Projections
   const dayOfMonth = Math.max(1, new Date().getDate());
   const daysInMonth = 30;
   const currentMonthSpent = meterData.estimated_bill_month || (meterData.energy_today * meterData.tariff_rate * dayOfMonth);
@@ -666,21 +699,29 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const setSafetyLimits = (maxVoltage: number, minVoltage: number, billThreshold: number) => {
     setMeterData(prev => {
+      const isOverVoltage = prev.voltage > maxVoltage && prev.voltage > 50;
+      const isUnderVoltage = prev.voltage < minVoltage && prev.voltage > 50;
+      const willTrip = isOverVoltage || isUnderVoltage;
+
       updateProtectionSettings(prev.meter_id, {
         max_voltage_limit: maxVoltage,
         min_voltage_limit: minVoltage,
-        bill_limit_threshold: billThreshold
+        bill_limit_threshold: billThreshold,
+        ...(willTrip ? { voltage_cutoff_tripped: true, main_supply_connected: false } : {})
       });
       addNotification(
-        'Safety Thresholds Configured',
-        `Max Voltage: ${maxVoltage}V, Min: ${minVoltage}V, Spend Cap: ₦${billThreshold.toLocaleString()}.`,
-        'system'
+        willTrip ? 'SAFETY OVERVOLTAGE TRIPPED' : 'Safety Thresholds Configured',
+        willTrip 
+          ? `Voltage ${prev.voltage.toFixed(1)}V violated limits (${minVoltage}V - ${maxVoltage}V). Contactor opened!`
+          : `Max Voltage: ${maxVoltage}V, Min: ${minVoltage}V, Spend Cap: ₦${billThreshold.toLocaleString()}.`,
+        willTrip ? 'outage' : 'system'
       );
       return {
         ...prev,
         max_voltage_limit: maxVoltage,
         min_voltage_limit: minVoltage,
-        bill_limit_threshold: billThreshold
+        bill_limit_threshold: billThreshold,
+        ...(willTrip ? { voltage_cutoff_tripped: true, main_supply_connected: false, active_power: 0.0, current: 0.0 } : {})
       };
     });
   };
@@ -811,8 +852,8 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setMeterData(prev => ({
       ...prev,
       main_supply_connected: newState,
-      active_power: newState ? 1.54 : 0.0,
-      current: newState ? 6.8 : 0.0
+      active_power: newState ? prev.active_power : 0.0,
+      current: newState ? prev.current : 0.0
     }));
 
     if (isSupabaseConfigured()) {

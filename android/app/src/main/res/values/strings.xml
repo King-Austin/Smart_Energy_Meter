@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Voltrix Smart Meter</string>
+    <string name="title_activity_main">Voltrix Smart Meter</string>
+    <string name="package_name">com.voltrix.smartmeter</string>
+    <string name="custom_url_scheme">com.voltrix.smartmeter</string>
+</resources>

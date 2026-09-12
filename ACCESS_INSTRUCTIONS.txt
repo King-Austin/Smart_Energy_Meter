@@ -1,0 +1,178 @@
+================================================================================
+          VOLTRIX SMART ENERGY METER - COMPLETE ACCESS & OPERATING GUIDE
+================================================================================
+
+This document contains everything you need to access, operate, test, and update
+your Voltrix Smart Energy Meter system via the Web Dashboard and Wi-Fi.
+
+--------------------------------------------------------------------------------
+1. VOLTRIX WEB APPLICATION ACCESS
+--------------------------------------------------------------------------------
+The frontend web application runs locally on your PC via Vite:
+
+- Consumer Dashboard URL:
+  http://localhost:5173
+  (From any phone/tablet on your local Wi-Fi: http://<YOUR_COMPUTER_IP>:5173)
+
+- Super Admin & Fleet Management Portal:
+  http://localhost:5173/#/admin
+
+- Default Meter ID:
+  MTR-8A24-19F2
+
+- Master Admin Security PIN (Tamper Unlock & Overrides):
+  1234
+
+To restart the web server if ever closed:
+Open terminal in the project folder and run:
+  npm run dev
+
+
+--------------------------------------------------------------------------------
+2. LIVE HARDWARE CONTACTOR SWITCH (GPIO 13)
+--------------------------------------------------------------------------------
+You can remotely connect or disconnect whole-house power right from the web:
+
+- Method 1 (Fast Home Screen Switch):
+  1. Open http://localhost:5173
+  2. Look at the "Current Power" card near the top.
+  3. You will see:
+     "Relay D13: CONNECTED (ON)" or "Relay D13: ISOLATED (OFF)"
+  4. Click "Turn Supply OFF" to cut mains power.
+     Within 2 seconds, the contactor on D13 clicks OPEN, the Alarm LED (D14)
+     lights solid RED, and the LCD displays "* POWER CUTOFF * / MOBILE APP CUT".
+  5. Click "Turn Supply ON" to snap the contactor back closed.
+
+- Method 2 (Settings Screen):
+  Go to Settings -> Remote Master Contactor Relay (D13) -> Click Toggle.
+
+- Method 3 (Meter Hardware Details Screen):
+  Click the top header logo to open Hardware Details -> Emergency Relay Control
+  (features a 3-second hold-to-disconnect safety latch).
+
+
+--------------------------------------------------------------------------------
+3. PHYSICAL TAMPER WORKFLOW (SS-5GL Microswitch on GPIO 32)
+--------------------------------------------------------------------------------
+The SS-5GL microswitch on header CN1 protects against enclosure breach/theft.
+- Pin state: INPUT_PULLUP (LOW/GND = Lid Closed/Secure, HIGH = Lid Opened/Breach).
+
+- What happens when breached:
+  If the lid switch opens (D32 becomes HIGH):
+  1. The contactor on D13 instantly OPENS (power cut).
+  2. Acoustic Buzzer (D25) sounds urgent 3-beep warning bursts every 2.2s.
+  3. Alarm LED (D14) turns solid RED.
+  4. LCD displays "! TAMPER ALARM ! / LID BREACH TRIP".
+  5. Database records a security event in tamper_events and locks tamper_locked.
+
+- How to Reset After Tamper:
+  1. Physically close the switch (or jumper CN1 pins D32 to GND).
+  2. In the web dashboard (http://localhost:5173), a red banner will appear.
+  3. Click "Admin PIN Unlock & Forensics".
+  4. Enter Admin PIN: 1234
+  5. Click "Clear Tamper Lock & Restore Contactor".
+  6. The contactor on D13 snaps back ON, the buzzer stops, and normal LCD
+     readings resume.
+
+- Bench Shortcut:
+  In Arduino Serial Monitor (115200 Baud), type 'c' and press Enter to clear tamper.
+
+
+--------------------------------------------------------------------------------
+4. WIRELESS ESP32 WEB CONSOLE & REALTIME SERIAL MONITOR
+--------------------------------------------------------------------------------
+You can view the live Serial Monitor without connecting any USB cable:
+
+1. Check your ESP32's IP address on the I2C LCD screen at boot (e.g. 192.168.1.100).
+2. Open your web browser on any device on the same Wi-Fi network:
+   http://<YOUR_ESP32_IP>/
+   (or http://voltrix-meter.local/)
+
+Features available on the ESP32 Web Console:
+- Live 115200 Baud streaming terminal with Auto-scroll.
+- Live status pills for AC Mains, Relay D13, Tamper D32, Free Heap, and Wi-Fi.
+- Instant wireless action buttons:
+  * [ Toggle Relay (D13) ]
+  * [ Clear Tamper Lock ]
+  * [ Clear Console ]
+  * [ Reboot ESP32 ]
+
+
+--------------------------------------------------------------------------------
+5. WIRELESS OVER-THE-AIR (OTA) FIRMWARE FLASHING
+--------------------------------------------------------------------------------
+Never plug in a USB cable while the prototype is connected to direct mains power!
+Flash all future code updates 100% wirelessly:
+
+Step 1: In Arduino IDE with Hardware.ino open:
+        Click "Sketch" -> "Export Compiled Binary" (or press Ctrl + Alt + S).
+        Arduino IDE will create a "Hardware.ino.bin" file in your sketch or build folder.
+
+Step 2: Open your browser to the ESP32 OTA portal:
+        http://<YOUR_ESP32_IP>/update
+
+Step 3: Click "Choose File" and select "Hardware.ino.bin".
+
+Step 4: Click "⚡ Flash Firmware Wirelessly".
+        Watch the live upload progress bar.
+        The ESP32 flashes in ~10 seconds and automatically reboots with your new code!
+
+(Bonus: Arduino IDE will also show your meter under Tools -> Port -> Network Ports:
+ "voltrix-meter at <IP>").
+
+
+--------------------------------------------------------------------------------
+6. ZERO MOCK DATA BEHAVIOR (AC Mains vs Battery Backup)
+--------------------------------------------------------------------------------
+All mock/simulated telemetry has been completely removed from both firmware and web:
+
+- When AC Mains is Connected:
+  * PZEM-004T measures true RMS AC Voltage, Current, Active kW, Power Factor, Frequency.
+  * LCD displays live measurements (e.g. "212.4V  0.04A" / "0.01kW  96.6kWh").
+  * Web dashboard shows real live draw.
+
+- When AC Mains is Disconnected (Running on Internal Backup Battery):
+  * PZEM loses AC power -> Firmware detects zero AC -> Strictly reports 0.0V / 0.00kW.
+  * LCD immediately displays:
+      * DISCONNECTED *
+      0.0V BATT 0.00kW
+  * Web dashboard immediately displays 0.00 kW and status:
+    "AC Mains is DISCONNECTED (0.0V). Device running on backup battery."
+
+
+--------------------------------------------------------------------------------
+7. AI ENERGY ASSISTANT (GOOGLE GEMINI)
+--------------------------------------------------------------------------------
+The AI Coach in the web dashboard is powered by Google Gemini (gemini-3.5-flash-lite):
+
+- Click the floating spark icon / AI button on the web app to open the assistant.
+- Quick prompts available:
+  * "How much did I use today?"
+  * "Why is my bill high?"
+  * "When was the last outage?"
+  * "Is my consumption unusual?"
+- You can also ask open-ended questions in natural English or Nigerian electricity
+  context (Band tariffs, generator trade-offs, appliance advice).
+
+
+--------------------------------------------------------------------------------
+8. VERIFIED HARDWARE GPIO PINOUT REFERENCE
+--------------------------------------------------------------------------------
+ESP32 NodeMCU-32S (30-Pin) PCB Mapping:
+
+- Power Contactor Relay : GPIO 13 (Header U2 via red jumper, Active LOW)
+- Acoustic Buzzer       : GPIO 25 (Active HIGH tone engine)
+- LED 1 (Pulse/Energy)  : GPIO 26 (LED Outputs Header Pin 1)
+- LED 2 (Wi-Fi Status)  : GPIO 27 (LED Outputs Header Pin 2)
+- LED 3 (Alarm/Cutoff)  : GPIO 14 (LED Outputs Header Pin 3)
+- SS-5GL Tamper Switch  : GPIO 32 (Header CN1, INPUT_PULLUP: LOW=Secure, HIGH=Breach)
+- PZEM-004T UART2 RX2   : GPIO 16 (PZEM Header Pin 3 <- PZEM TX)
+- PZEM-004T UART2 TX2   : GPIO 17 (PZEM Header Pin 2 -> PZEM RX)
+- I2C LCD Display (SDA) : GPIO 21 (LCD Header Pin 3)
+- I2C LCD Display (SCL) : GPIO 22 (LCD Header Pin 2)
+- Common 5V DC Rail     : VIN (CN2 Bottom pad)
+- Common Ground         : GND (CN2 Top square pad)
+
+================================================================================
+Generated on: 2026-09-12 | Voltrix Smart Energy Meter System v3.2
+================================================================================

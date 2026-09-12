@@ -34,3 +34,21 @@ dist-ssr
 # Agent and AI internal directories
 .agents
 .system_generated
+
+# Hardware build and compilation cache
+Hardware/build/
+Hardware/**/build/
+
+# Android build outputs & local sdk configs
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+android/.idea/
+android/*.iml
+
+# Root temporary binaries
+Voltrix-SmartMeter-debug.apk
+*.tmp
+

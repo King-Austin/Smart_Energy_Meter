@@ -33,16 +33,22 @@ Hardware/
 
 ---
 
-## 🔌 Hardware GPIO Pin Mapping
+## 🔌 Hardware GPIO Pin Mapping (Verified PCB Layout)
 
-| Pin | Function | Hardware Component | Description |
+| Pin | Direction / Mode | Peripheral | Header / Description |
 | :--- | :--- | :--- | :--- |
-| **GPIO 23** | Output (50ms Pulse) | Contactor Set Coil | Latches relay to ON position |
-| **GPIO 22** | Output (50ms Pulse) | Contactor Reset Coil | Latches relay to OFF position |
-| **GPIO 14** | Input (Pull-up) | Case Lid Microswitch | Goes HIGH when meter lid is opened |
-| **GPIO 34** | Input | A3144 Hall Effect | Detects strong external magnets |
-| **GPIO 19** | Output | Audible Buzzer | Sounds alarm on tamper / zero units |
-| **GPIO 2**  | Output | Status LED | Blinks on each cloud transmission |
+| **GPIO 13** | Output | **Relay Contactor** | Header U2 (Active LOW trigger via bottom jumper) |
+| **GPIO 25** | Output | **Audible Buzzer** | BUZZER Footprint (Active HIGH / 2kHz tone) |
+| **GPIO 26** | Output | **LED 1 (Pulse)** | LED OUTPUTS Pin 1 (Energy / TX pulse) |
+| **GPIO 27** | Output | **LED 2 (Status)** | LED OUTPUTS Pin 2 (System / Wi-Fi status) |
+| **GPIO 14** | Output | **LED 3 (Alarm)** | LED OUTPUTS Pin 3 (Tamper / Trip alarm) |
+| **GPIO 32** | Input (`INPUT_PULLUP`) | **SS-5GL Lid Switch** | Header CN1 (LOW = closed, HIGH = lid opened) |
+| **GPIO 21** | I2C Data (`SDA`) | **1602/2004 LCD** | LCD Header Pin 3 (PCF8574 address `0x27`/`0x3F`) |
+| **GPIO 22** | I2C Clock (`SCL`) | **1602/2004 LCD** | LCD Header Pin 2 |
+| **GPIO 16** | UART2 RX (`RX2`) | **PZEM-004T v3.0** | PZEM Header Pin 3 (TX from sensor) |
+| **GPIO 17** | UART2 TX (`TX2`) | **PZEM-004T v3.0** | PZEM Header Pin 2 (RX to sensor) |
+| **VIN / 5V**| DC Power Input | **5V Power Rail** | Header CN2 Pin 2 |
+| **GND** | DC Return | **Common Ground** | Header CN2 Pin 1 |
 
 ---
 

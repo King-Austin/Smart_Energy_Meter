@@ -37,7 +37,8 @@ export const TamperHistoryModal: React.FC<TamperHistoryModalProps> = ({ isOpen, 
       setAdminPin('');
       setTimeout(() => {
         setSuccessMsg('');
-      }, 3000);
+        onClose();
+      }, 1500);
     } else {
       setErrorMsg(res.error || 'Failed to clear tamper. Verify Admin PIN.');
     }

@@ -6,16 +6,18 @@
 class SensorManager {
 public:
   void begin();
-  void readSensors(SensorReadings &readings, bool simulationMode = false);
-  float readTrueRMSVoltage(uint16_t sampleCycles = 5);
+  void readSensors(SensorReadings &readings);
+  bool readPZEM(SensorReadings &readings);
   bool checkTamperConditions(MeterState &state, const SensorReadings &readings);
   void triggerTamper(MeterState &state, TamperType type);
   void clearTamper(MeterState &state);
+  bool isPzemOnline() const { return pzemResponding; }
 
 private:
-  float simVoltage = 230.0f;
-  float simCurrent = 5.2f;
-  float lastDcBias = 1.65f;
+  bool pzemResponding = false;
+  unsigned long lastPzemAttempt = 0;
+
+  uint16_t calculateCRC16(const uint8_t *data, uint16_t length);
 };
 
 extern SensorManager Sensors;

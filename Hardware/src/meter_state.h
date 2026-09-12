@@ -27,6 +27,19 @@ struct MeterState {
   bool isRelayOn;
   bool isTampered;
   TamperType tamperReason;
+  float maxVoltageLimit = 240.0f; // Dynamic overvoltage safety cutoff
+  float minVoltageLimit = 180.0f; // Dynamic brownout protection cutoff
   unsigned long lastSyncMillis;
   unsigned long lastEnergyCalcMillis;
+};
+
+struct OfflineTelemetryRecord {
+  float voltage;
+  float liveCurrent;
+  float activePower;
+  float powerFactor;
+  float frequency;
+  bool isTampered;
+  bool isRelayOn;
+  unsigned long timestampSeconds;
 };

@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   AlertOctagon
 } from 'lucide-react';
+import { WirelessConsoleCard } from '../components/device/WirelessConsoleCard';
 
 export const DeviceDetailsScreen: React.FC = () => {
   const { meterData, toggleMainSupply, setActiveTab } = useMeter();
@@ -117,6 +118,9 @@ export const DeviceDetailsScreen: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* WIRELESS CONSOLE & OTA FIRMWARE HUB */}
+      <WirelessConsoleCard />
 
       {/* WHOLE-HOUSE EMERGENCY SUPPLY RELAY CONTROL */}
       <div className="glass-card p-5 border-red-500/30 bg-red-500/5 space-y-4">

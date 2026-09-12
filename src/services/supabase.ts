@@ -346,43 +346,132 @@ export async function fetchSupabaseRecipients(): Promise<RegisteredRecipient[]> 
   return data as RegisteredRecipient[];
 }
 
-// 16. Fetch hourly consumption aggregated directly from telemetry_logs in Supabase DB
-export async function fetchHourlyUsageFromDB(meterId: string = 'MTR-8A24-19F2', tariffRate: number = 68.5) {
+// 16a. Fetch recent telemetry snapshots for live seconds/real-time streaming bar graph
+export async function fetchRecentTelemetryLogs(meterId: string = 'MTR-8A24-19F2', limit: number = 20) {
+  try {
+    const { data: logs, error } = await supabase
+      .from('telemetry_logs')
+      .select('active_power, voltage, current, is_relay_on, created_at')
+      .eq('meter_id', meterId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error || !logs || logs.length === 0) {
+      return [];
+    }
+
+    return logs.reverse().map(row => {
+      const d = new Date(row.created_at);
+      const timeStr = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+      const kw = Number(row.active_power || 0);
+      const watts = Math.round(kw * 1000);
+      return {
+        timeStr,
+        watts,
+        kw,
+        voltage: Number(row.voltage || 0),
+        current: Number(row.current || 0),
+        isRelayOn: row.is_relay_on !== false
+      };
+    });
+  } catch (err) {
+    console.warn('[Supabase] Error fetching recent telemetry logs:', err);
+    return [];
+  }
+}
+
+// 16b. Fetch hourly consumption with 12 distinct 2-hour time slots across the 24h day
+export async function fetchHourlyUsageFromDB(meterId: string = 'MTR-8A24-19F2', tariffRate: number = 150.0) {
   try {
     const { data: logs, error } = await supabase
       .from('telemetry_logs')
       .select('active_power, created_at')
       .eq('meter_id', meterId)
       .order('created_at', { ascending: true })
-      .limit(200);
+      .limit(300);
 
-    if (error || !logs || logs.length === 0) {
-      return null;
+    if (error) {
+      console.warn('[Supabase] Error fetching hourly logs:', error.message);
     }
 
-    const hourlyMap = new Map<string, { totalKw: number; count: number }>();
-    logs.forEach(row => {
-      const date = new Date(row.created_at);
-      const hourStr = `${date.getHours().toString().padStart(2, '0')}:00`;
-      const current = hourlyMap.get(hourStr) || { totalKw: 0, count: 0 };
-      current.totalKw += Number(row.active_power || 0);
-      current.count += 1;
-      hourlyMap.set(hourStr, current);
-    });
+    const slotHours = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22];
+    const slotMap = new Map<number, { totalKw: number; count: number }>();
+    slotHours.forEach(h => slotMap.set(h, { totalKw: 0, count: 0 }));
 
-    const result = Array.from(hourlyMap.entries()).map(([hourLabel, stat]) => {
+    if (logs && logs.length > 0) {
+      logs.forEach(row => {
+        const date = new Date(row.created_at);
+        const hour = date.getHours();
+        // Bucket into nearest 2-hour slot
+        const nearestSlot = Math.floor(hour / 2) * 2;
+        const current = slotMap.get(nearestSlot) || { totalKw: 0, count: 0 };
+        current.totalKw += Number(row.active_power || 0);
+        current.count += 1;
+        slotMap.set(nearestSlot, current);
+      });
+    }
+
+    return slotHours.map(h => {
+      const stat = slotMap.get(h)!;
       const avgKw = stat.count > 0 ? stat.totalKw / stat.count : 0;
-      const kwh = Number((avgKw * 1.0).toFixed(2));
+      const kwh = Number((avgKw * 2.0).toFixed(2)); // 2-hour energy block
+      const hourLabel = `${h.toString().padStart(2, '0')}:00`;
       return {
         hourLabel,
-        kwh: Math.max(0.1, kwh),
+        kwh,
+        watts: Math.round(avgKw * 1000),
         cost: Math.round(kwh * tariffRate)
       };
     });
-
-    return result.length > 0 ? result : null;
   } catch (err) {
     console.warn('[Supabase] Error aggregating hourly usage from DB:', err);
+    return null;
+  }
+}
+
+// 16c. Fetch daily usage across all 7 days of the week (Mon - Sun)
+export async function fetchDailyUsageFromDB(meterId: string = 'MTR-8A24-19F2', tariffRate: number = 150.0) {
+  try {
+    const { data: logs, error } = await supabase
+      .from('telemetry_logs')
+      .select('active_power, created_at')
+      .eq('meter_id', meterId)
+      .order('created_at', { ascending: true })
+      .limit(500);
+
+    if (error) {
+      console.warn('[Supabase] Error fetching daily logs:', error.message);
+    }
+
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const dayMap = new Map<string, { totalKw: number; count: number }>();
+    days.forEach(d => dayMap.set(d, { totalKw: 0, count: 0 }));
+
+    if (logs && logs.length > 0) {
+      logs.forEach(row => {
+        const date = new Date(row.created_at);
+        const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' });
+        if (dayMap.has(dayStr)) {
+          const current = dayMap.get(dayStr)!;
+          current.totalKw += Number(row.active_power || 0);
+          current.count += 1;
+          dayMap.set(dayStr, current);
+        }
+      });
+    }
+
+    return days.map(dayLabel => {
+      const stat = dayMap.get(dayLabel)!;
+      const avgKw = stat.count > 0 ? stat.totalKw / stat.count : 0;
+      const kwh = Number((avgKw * 24.0).toFixed(1));
+      return {
+        dayLabel,
+        kwh,
+        cost: Math.round(kwh * tariffRate)
+      };
+    });
+  } catch (err) {
+    console.warn('[Supabase] Error aggregating daily usage from DB:', err);
     return null;
   }
 }
