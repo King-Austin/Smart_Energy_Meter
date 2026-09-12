@@ -216,7 +216,7 @@ export const LandingAppShowcase: React.FC<LandingAppShowcaseProps> = ({ theme = 
         <p className={`text-xs sm:text-base leading-relaxed max-w-2xl mx-auto ${
           isGlobalDark ? 'text-slate-400' : 'text-slate-600'
         }`}>
-          Crafted to Apple-grade standards. Fully automated slideshow highlighting live telemetry, zero-token billing, and 30A relay protection.
+          Designed for pure simplicity. Explore how Voltrix puts effortless electricity management and peace of mind right in your hands.
         </p>
 
         {/* Controls Bar: Theme Switcher & Auto-Play Pause */}
