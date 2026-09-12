@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMeter } from '../../context/MeterContext';
+import { loadPaystackScript } from '../../services/paymentService';
 import {
   X,
   Zap,
@@ -30,7 +31,7 @@ export const FundWalletModal: React.FC<FundWalletModalProps> = ({ isOpen, onClos
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Paystack Key State (defaults to test key, user can input custom key)
-  const defaultKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_cb9149488426bb62939ca68340d8924b179d727f';
+  const defaultKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_5f1c91e190d20311b19a5158002dc747912e534a';
   const [customPaystackKey, setCustomPaystackKey] = useState<string>(defaultKey);
   const [showKeyConfig, setShowKeyConfig] = useState<boolean>(false);
 
@@ -41,6 +42,12 @@ export const FundWalletModal: React.FC<FundWalletModalProps> = ({ isOpen, onClos
   const [simCvv] = useState<string>('824');
   const [simOtp, setSimOtp] = useState<string>('123456');
   const [simStep, setSimStep] = useState<'card' | 'otp' | 'processing'>('card');
+
+  useEffect(() => {
+    if (isOpen) {
+      loadPaystackScript();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -53,10 +60,10 @@ export const FundWalletModal: React.FC<FundWalletModalProps> = ({ isOpen, onClos
     setErrorMessage(null);
 
     const paystackPop = (window as any).PaystackPop;
-    const isCustomRealKey = customPaystackKey.trim().startsWith('pk_test_') && customPaystackKey.trim() !== defaultKey;
+    const isTestKeyValid = customPaystackKey.trim().startsWith('pk_test_');
 
-    // If user provided a custom test key and PaystackPop is available, open real Paystack
-    if (isCustomRealKey && paystackPop && typeof paystackPop.setup === 'function') {
+    // If user provided a valid test key and PaystackPop is available, open real Paystack
+    if (isTestKeyValid && paystackPop && typeof paystackPop.setup === 'function') {
       setIsProcessing(true);
       try {
         const handler = paystackPop.setup({
@@ -65,6 +72,7 @@ export const FundWalletModal: React.FC<FundWalletModalProps> = ({ isOpen, onClos
           amount: Math.round(amount * 100),
           currency: 'NGN',
           ref: `PST-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          callback_url: window.location.origin,
           metadata: {
             custom_fields: [
               { display_name: 'Meter ID', variable_name: 'meter_id', value: meterData.meter_id },

@@ -147,7 +147,7 @@ export const LandingScreen: React.FC = () => {
                 download="Voltrix-SmartMeter.apk"
                 className="hover:text-[#ff5b26] transition-colors font-bold text-[#ff5b26]"
               >
-                Download APK (9.2 MB)
+                Download APK (5.5 MB)
               </a>
               <button
                 type="button"
@@ -170,24 +170,65 @@ export const LandingScreen: React.FC = () => {
             </div>
           </div>
 
-          {/* Academic Attribution Citation Box */}
-          <div className={`p-4 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-            isDark ? 'bg-white/[0.02] border-white/[0.06] text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'
+          {/* Distinguished Academic Honors & Supervisory Citation */}
+          <div className={`p-6 sm:p-7 rounded-3xl border relative overflow-hidden transition-all shadow-sm ${
+            isDark 
+              ? 'bg-gradient-to-r from-amber-500/[0.08] via-orange-500/[0.04] to-slate-900/40 border-amber-500/25 text-slate-300' 
+              : 'bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-white border-amber-200/90 text-slate-700 shadow-slate-200/50'
           }`}>
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4 text-[#ff5b26] shrink-0" />
-              <span>
-                <strong>Undergraduate Engineering Capstone Thesis:</strong> <em>&ldquo;Design and Implementation of an IoT-Enabled Smart Energy Meter with Consumption Analytics&rdquo;</em>
-              </span>
-            </div>
-            <div className="shrink-0 font-medium">
-              Academic Supervision: <strong className={isDark ? 'text-slate-200' : 'text-slate-800'}>Prof. Mrs. Okezie</strong>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-[#ff5b26] flex items-center justify-center text-white shadow-lg shadow-amber-500/25 shrink-0 ring-2 ring-white/10">
+                  <GraduationCap className="w-6 h-6" />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                      Undergraduate Engineering Capstone
+                    </span>
+                    <span className="text-xs text-slate-400">•</span>
+                    <span className={`text-xs font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                      Final Year Thesis Project
+                    </span>
+                  </div>
+                  <h4 className={`text-sm sm:text-base font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    &ldquo;Design and Implementation of an IoT-Enabled Smart Energy Meter with Consumption Analytics&rdquo;
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
+                    Conducted as an academic engineering prototype validating automated tokenless billing, autonomous surge cutoff protection, and AI-driven consumption analytics.
+                  </p>
+                </div>
+              </div>
+
+              {/* Distinguished Supervisor Badge */}
+              <div className={`shrink-0 flex items-center gap-3.5 p-3.5 rounded-2xl border ${
+                isDark 
+                  ? 'bg-black/30 border-amber-500/20 shadow-inner' 
+                  : 'bg-white/90 border-amber-200/80 shadow-xs'
+              }`}>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                    Academic Supervisor
+                  </div>
+                  <div className={`text-sm sm:text-base font-black tracking-tight ${
+                    isDark ? 'text-amber-300' : 'text-amber-900'
+                  }`}>
+                    Prof. Mrs. Okezie
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-medium">
+                    Project Supervisor & Research Mentor
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] pt-4 border-t border-inherit">
-            <span>© 2026 Voltrix Energy Research. Final Year Engineering Thesis Prototype.</span>
-            <span>ESP32 • PZEM-004T • 30A High-Power Relay Module • Supabase Cloud</span>
+            <span>© 2026 Voltrix Energy Research. Undergraduate Engineering Capstone Prototype.</span>
+            <span className="text-slate-500">Zero-Token Recharging • Autonomous Surge Defense • AI Analytics</span>
           </div>
         </div>
       </footer>

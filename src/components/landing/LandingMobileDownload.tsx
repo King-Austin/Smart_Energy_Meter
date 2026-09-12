@@ -42,8 +42,8 @@ export const LandingMobileDownload: React.FC<LandingMobileDownloadProps> = ({
             </h2>
 
             <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-              Experience real-time power monitoring with native physical haptics on 30A relay toggling, instant push alerts when voltage 
-              trips occur, and automatic local fallback when your home internet drops.
+              Experience real-time power monitoring with native physical haptics, instant push alerts when voltage 
+              trips occur, one-tap remote power disconnect, and automatic offline tracking when your home internet drops.
             </p>
 
             {/* Specifications Card */}
@@ -60,7 +60,7 @@ export const LandingMobileDownload: React.FC<LandingMobileDownloadProps> = ({
                 isDark ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-white border-slate-200 shadow-xs'
               }`}>
                 <div className="text-[10px] uppercase font-bold text-slate-400">File Size</div>
-                <div className="text-sm font-black text-[#ff5b26] mt-0.5">9.2 MB</div>
+                <div className="text-sm font-black text-[#ff5b26] mt-0.5">5.5 MB</div>
               </div>
               <div className={`p-3 rounded-xl border ${
                 isDark ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-white border-slate-200 shadow-xs'

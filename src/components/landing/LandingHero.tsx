@@ -41,12 +41,11 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         </span>
       </h1>
 
-      {/* Academic Engineering Subtitle */}
+      {/* Value-Driven Elevator Pitch Subtitle */}
       <p className={`text-base sm:text-lg font-normal leading-relaxed max-w-2xl ${
         isDark ? 'text-slate-300' : 'text-slate-600'
       }`}>
-        An IoT-enabled smart energy submeter engineered with <strong>30A power relay protection</strong>, 
-        zero-token instant unit recharging, and real-time AI consumption analytics — validating software and live hardware co-design.
+        Take back total control of your power. Say goodbye to unfair estimated bills, midnight 20-digit token hassles, and appliance-destroying voltage spikes. Voltrix tracks every watt in real time, credits your recharges instantly, and protects your entire home straight from your smartphone.
       </p>
 
       {/* Action Buttons */}
@@ -106,15 +105,15 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
       }`}>
         <div className="flex items-center gap-1.5">
           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          <span>Zero-Token Automated Credit</span>
+          <span>Instant Recharge — Zero Token Slips</span>
         </div>
         <div className="flex items-center gap-1.5">
           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          <span>30A Relay &lt;200ms Cutoff</span>
+          <span>Smart Surge & Appliance Defense</span>
         </div>
         <div className="flex items-center gap-1.5">
           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          <span>AI Energy Advisor</span>
+          <span>100% Bill Transparency</span>
         </div>
       </div>
     </div>

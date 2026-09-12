@@ -16,23 +16,23 @@ export const LandingFaq: React.FC<LandingFaqProps> = ({ theme = 'dark' }) => {
     },
     {
       q: 'How does the surge and overvoltage protection safeguard my appliances?',
-      a: 'Voltrix features an integrated heavy-duty 30A power relay module. You can set a custom safe voltage limit (e.g. 240V or 250V). If the utility grid spikes dangerously above your limit, the meter physically disconnects mains power in under 200 milliseconds to prevent appliance burnout. Once line voltage normalizes, re-engage power with a single tap of the Reset button.'
+      a: 'Voltrix features an intelligent high-speed safety switch built right into the meter. You can set your preferred safe voltage limit (e.g. 240V or 250V). If erratic utility power spikes dangerously, Voltrix instantly cuts power to your home in milliseconds — stopping surges before they can fry your refrigerator, TVs, or inverter setup. Once grid power normalizes, you can re-engage with a single tap from your phone.'
     },
     {
       q: 'Is this project an academic research prototype?',
-      a: 'Yes. Voltrix was designed and engineered as an undergraduate engineering capstone research project titled "Design and Implementation of an IoT-Enabled Smart Energy Meter with Consumption Analytics", under the academic supervision of Prof. Mrs. Okezie. It features full live hardware-in-the-loop validation (ESP32, PZEM-004T, 30A relay) with mobile and web clients.'
+      a: 'Yes. Voltrix was designed and engineered as an undergraduate engineering capstone research project titled "Design and Implementation of an IoT-Enabled Smart Energy Meter with Consumption Analytics", under the academic supervision of Prof. Mrs. Okezie. It features full live hardware-in-the-loop validation with mobile and web clients.'
     },
     {
       q: 'How does the meter operate during an internet outage?',
-      a: 'Voltrix operates with complete edge autonomy. The ESP32 edge microcontroller continues measuring electricity consumption, accumulating kilowatt-hours, and enforcing all 30A relay safety cutoffs even if your home Wi-Fi drops completely. As soon as connectivity returns, your historical data seamlessly syncs back to the cloud.'
+      a: 'Voltrix operates with complete edge autonomy. The smart meter continues measuring your electricity consumption, accumulating units, and protecting your appliances even if your home Wi-Fi drops completely. As soon as connectivity returns, your historical data seamlessly syncs back to the cloud.'
     },
     {
       q: 'Can I turn my power on or off remotely?',
-      a: 'Yes. Through the mobile app or web dashboard, you have full master switch control over the 30A power relay. You can safely disconnect or reconnect your entire home or sub-tenant unit with a single tap from anywhere.'
+      a: 'Yes. Through the mobile app or web dashboard, you have a master whole-home power switch. You can safely turn off electricity to your home or rented apartment with a single tap from anywhere in the world.'
     },
     {
       q: 'How do I install the Voltrix Android APK on my phone?',
-      a: 'Click "Download Android App" or scan the QR code to download Voltrix-SmartMeter.apk (9.2 MB). Open the downloaded file on your device and tap Install. The app works natively on any phone running Android 8.0 or newer.'
+      a: 'Click "Download Android App" or scan the QR code to download Voltrix-SmartMeter.apk (5.5 MB). Open the downloaded file on your device and tap Install. The app works natively on any phone running Android 8.0 or newer.'
     }
   ];
 

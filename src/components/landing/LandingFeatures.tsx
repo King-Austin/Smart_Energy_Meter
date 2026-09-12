@@ -39,9 +39,9 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ theme = 'dark'
           <div className="w-12 h-12 rounded-2xl bg-[#ff5b26]/10 border border-[#ff5b26]/20 flex items-center justify-center text-[#ff5b26] mb-5 group-hover:scale-110 transition-transform">
             <Zap className="w-6 h-6" />
           </div>
-          <h3 className="text-lg font-black mb-2">Live Sub-Second Telemetry</h3>
+          <h3 className="text-lg font-black mb-2">100% Bill Transparency</h3>
           <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Real-time True-RMS measurement of voltage, current, active power, and cumulative kWh with laboratory precision. Never wonder where your electricity is going.
+            End unfair estimated bills once and for all. Watch your voltage, current, and true kilowatt-hours live as you use them. Know exactly which appliances consume your money down to the kobo.
           </p>
         </div>
 
@@ -54,9 +54,9 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ theme = 'dark'
           <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-5 group-hover:scale-110 transition-transform">
             <ShieldCheck className="w-6 h-6" />
           </div>
-          <h3 className="text-lg font-black mb-2">Instant 30A Relay Protection</h3>
+          <h3 className="text-lg font-black mb-2">Smart Surge & Appliance Guard</h3>
           <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Automated overvoltage cutoff stops grid power surges before they destroy appliances. The physical 30A relay trips in under 200ms and re-arms with one tap.
+            Erratic grid voltage ruins refrigerators, TVs, and inverters. Voltrix detects dangerous surges instantly and cuts power in milliseconds, saving your electronics from costly burnout.
           </p>
         </div>
 
@@ -71,7 +71,7 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ theme = 'dark'
           </div>
           <h3 className="text-lg font-black mb-2">Zero-Token Direct Recharging</h3>
           <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            No 20-digit keypad codes. Input your payment amount in Naira, see the exact kilowatt-hours calculated automatically, and enjoy instant balance credit via IoT.
+            No more typing 20-digit numbers on a screeching keypad. Enter your recharge amount, see exact kilowatt-hours credited directly to your meter, and keep your lights on effortlessly.
           </p>
         </div>
 
@@ -99,9 +99,9 @@ export const LandingFeatures: React.FC<LandingFeaturesProps> = ({ theme = 'dark'
           <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-500 mb-5 group-hover:scale-110 transition-transform">
             <Power className="w-6 h-6" />
           </div>
-          <h3 className="text-lg font-black mb-2">Remote 30A Relay Switch</h3>
+          <h3 className="text-lg font-black mb-2">Remote Whole-Home Switch</h3>
           <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Turn your mains supply on or off remotely with a single tap. Ideal for landlords, sub-tenants, holiday homes, and emergency power isolation.
+            Heading out and forgot to turn off heavy loads? Disconnect or reconnect your electricity straight from your phone wherever you are. Absolute peace of mind for landlords and tenants.
           </p>
         </div>
 

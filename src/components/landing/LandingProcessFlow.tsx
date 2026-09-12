@@ -43,19 +43,19 @@ const PROCESS_STEPS: ProcessStep[] = [
   },
   {
     stepNumber: '02',
-    title: '30A Relay Safety Isolation',
-    subtitle: 'Autonomous sub-200ms edge protection',
-    badge: 'Edge Actuation',
+    title: 'Automatic Surge Defense',
+    subtitle: 'Autonomous millisecond appliance protection',
+    badge: 'Safety Defense',
     icon: ShieldCheck,
     color: '#ff5b26', // orange
     description:
-      'The ESP32 runs continuous safety guardrails in hardware interrupts. If line voltage exceeds the user cutoff (e.g. 250V) or prepaid balance reaches 0.00 kWh, the 30A relay instantly disconnects the load.',
+      'Voltage surges from erratic utility power destroy home electronics in seconds. Voltrix continuously monitors grid stability. If voltage spikes dangerously or your prepaid units run out, the meter safely isolates power in milliseconds to protect your home.',
     technicalDetails: [
-      '30A heavy-duty power relay module',
-      'Hardware-level sub-200ms isolation',
-      'Autonomous protection without active internet'
+      'Sub-second high-voltage surge cutoff',
+      'Protects refrigerators, TVs & inverters',
+      'Works autonomously even if internet is down'
     ],
-    animationHint: 'Instantaneous contact isolation trigger'
+    animationHint: 'Instantaneous power protection trigger'
   },
   {
     stepNumber: '03',
@@ -69,7 +69,7 @@ const PROCESS_STEPS: ProcessStep[] = [
     technicalDetails: [
       'Automatic kWh = Amount / ₦160 formula',
       'Instant cloud IoT balance update',
-      'Auto-rearms 30A relay when balance is restored'
+      'Auto-restores power the second balance is paid'
     ],
     animationHint: 'Instant cloud-to-hardware credit pulse'
   },

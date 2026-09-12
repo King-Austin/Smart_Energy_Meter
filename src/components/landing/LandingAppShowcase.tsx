@@ -29,16 +29,16 @@ const SHOWCASE_ITEMS: ShowcaseItem[] = [
   {
     id: 'telemetry',
     badge: 'Real-Time Power',
-    title: 'Live Telemetry & 30A Relay Control',
-    subtitle: 'Cut or reconnect your home load in under 200ms.',
+    title: 'Live Tracking & Remote Master Switch',
+    subtitle: 'See every watt live. Cut or restore power anywhere.',
     description:
-      'Precision voltage, active load current, and True-RMS wattage streaming live. Toggle the 30A power relay switch directly to isolate circuits or restore power with zero mechanical delay.',
+      'Never guess what is consuming your electricity. Precision voltage, current, and active wattage stream live in real time. Switch off power to your entire apartment remotely with a single tap straight from your phone.',
     imageLight: '/screenshots/light/home_light.png',
     imageDark: '/screenshots/light/home_light.png',
     highlights: [
-      'Sub-second live True-RMS telemetry',
-      '30A power relay disconnect & reconnect',
-      'Prepaid energy runway & daily usage tracking'
+      'Sub-second live power & voltage tracking',
+      'One-tap remote whole-home power switch',
+      'Prepaid energy runway & days-remaining forecast'
     ]
   },
   {
@@ -89,16 +89,16 @@ const SHOWCASE_ITEMS: ShowcaseItem[] = [
   {
     id: 'safety',
     badge: 'Active Guardrails',
-    title: 'Surge & 30A Relay Protection',
-    subtitle: 'Protect your expensive appliances automatically.',
+    title: 'Smart Surge & Appliance Guard',
+    subtitle: 'Stop dangerous grid spikes from destroying your electronics.',
     description:
-      'Set custom overvoltage and brownout thresholds. When grid voltage spikes above your safety limit, the 30A power relay trips instantly, isolating your home and re-arming with a single tap.',
+      'Erratic grid voltage ruins refrigerators, television sets, and inverters. Set your custom voltage safety threshold. When grid voltage spikes dangerously, Voltrix instantly cuts power to your home, protecting your appliances before any damage can occur.',
     imageLight: '/screenshots/light/settings_light.png',
     imageDark: '/screenshots/light/settings_light.png',
     highlights: [
-      'Custom overvoltage safety slider (180V - 260V)',
-      'Single-tap 30A relay protection reset',
-      'P2P energy sharing gateway'
+      'Instant high-voltage surge cutoff',
+      'One-tap trip reset after grid normalizes',
+      'Zero expensive external surge protectors needed'
     ]
   }
 ];

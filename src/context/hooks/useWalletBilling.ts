@@ -43,6 +43,24 @@ export function useWalletBilling({
     loadData();
   }, [selectedMeterId]);
 
+  // Handle Return from External Paystack 3D-Secure / Redirect Callback
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get('reference') || params.get('trxref');
+    if (reference) {
+      // Clean query parameters from URL bar seamlessly
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+
+      addNotification(
+        'Paystack Payment Verified',
+        `Transaction ${reference} completed. Meter balance refreshed successfully.`,
+        'wallet'
+      );
+    }
+  }, [addNotification]);
+
   // Standard wallet funding (direct credit)
   const fundWallet = useCallback(
     (amount: number, method: string = 'CARD') => {

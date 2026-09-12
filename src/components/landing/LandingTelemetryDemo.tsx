@@ -74,12 +74,12 @@ export const LandingTelemetryDemo: React.FC<LandingTelemetryDemoProps> = ({
               <span className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                 Live Submeter Telemetry
               </span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded font-bold bg-[#ff5b26]/15 text-[#ff5b26]">
-                30A RELAY
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#ff5b26]/15 text-[#ff5b26]">
+                LIVE APARTMENT
               </span>
             </div>
             <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              MTR-8A24-19F2 • Academic Prototype
+              MTR-8A24-19F2 • Cloud Synchronized
             </p>
           </div>
         </div>
@@ -93,7 +93,7 @@ export const LandingTelemetryDemo: React.FC<LandingTelemetryDemoProps> = ({
               ? 'bg-red-500/15 text-red-400 border-red-500/30'
               : 'bg-red-50 text-red-700 border-red-200'
         }`}>
-          {isRelayOn ? 'LIVE 50Hz' : 'LOAD CUT'}
+          {isRelayOn ? 'LIVE 50Hz' : 'POWER OFF'}
         </span>
       </div>
 
@@ -125,7 +125,7 @@ export const LandingTelemetryDemo: React.FC<LandingTelemetryDemoProps> = ({
             <span className="text-xs text-[#ff5b26] font-bold">{powerFormatted.unit}</span>
           </div>
           <div className={`text-[10px] font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            {isRelayOn ? `${currentAmps.toFixed(2)} A Current` : 'Load Disconnected'}
+            {isRelayOn ? `${currentAmps.toFixed(2)} A Current` : 'Power Disconnected'}
           </div>
         </div>
 
@@ -159,16 +159,16 @@ export const LandingTelemetryDemo: React.FC<LandingTelemetryDemoProps> = ({
         </div>
       </div>
 
-      {/* 30A Power Relay Actuation Switch */}
+      {/* Smart Mains Power Control Switch */}
       <div className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
         isDark ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-slate-50 border-slate-200'
       }`}>
         <div>
           <div className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            30A Power Relay Switch
+            Smart Mains Power Switch
           </div>
           <div className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-            {isRelayOn ? '30A Relay Closed (Mains Power Live)' : '30A Relay Open (Load Isolated)'}
+            {isRelayOn ? 'Connected (Home Power Live)' : 'Power Cut (Appliances Protected)'}
           </div>
         </div>
 
@@ -196,11 +196,11 @@ export const LandingTelemetryDemo: React.FC<LandingTelemetryDemoProps> = ({
       }`}>
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-          <span>Enclosure: Secure (SS-5GL)</span>
+          <span>Tamper Guard Active</span>
         </div>
         <div className="flex items-center gap-1.5 font-mono text-[#ff5b26]">
           <Wifi className="w-3.5 h-3.5" />
-          <span>ESP32 Wi-Fi Sync</span>
+          <span>Live Cloud Sync</span>
         </div>
       </div>
     </div>
