@@ -413,6 +413,12 @@ The landing page incorporates an automated, touch-optimized product showcase:
 - Mobile touch swipe detection (`onTouchStart`, `onTouchEnd`).
 - Embedded interactive Paystack Test Checkout Simulator.
 
+### 8.3 Strict Geographic Tariff Enforcement & Data Integrity
+To preserve utility-grade data integrity and prevent consumer tariff circumvention via GPS spoofing, the system implements a strict static-selection architecture for geographic mapping:
+- **State Locking:** The geographic state is administratively locked to the distribution company's operational zone (e.g., Anambra State).
+- **JSON Array Discretization:** Local Government Areas (LGAs) are strictly populated from a predefined JSON array containing the exact 21 recognized LGAs within the state (from Aguata to Oyi).
+- **Justification:** This approach prevents arbitrary free-text entry, eliminates the unreliability of browser-based HTML5 Geolocation, and aligns perfectly with how real Distribution Companies (DisCos) map customer nodes to designated Feeders and Districts.
+
 ---
 
 ## CHAPTER 9: ARTIFICIAL INTELLIGENCE ENERGY ADVISOR
