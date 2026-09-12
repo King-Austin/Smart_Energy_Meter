@@ -131,6 +131,8 @@ export interface MeterSummary {
   hardware_relay_ack?: boolean;
   is_tampered: boolean;
   tamper_locked: boolean;
+  prepaid_units_kwh?: number;
+  wallet_balance?: number;
   wifi_rssi?: number;
   battery_percentage?: number;
   last_seen: string;
@@ -249,7 +251,7 @@ export interface NotificationItem {
   meter_id?: string;
 }
 
-export type ActiveTab = 'home' | 'energy' | 'wallet' | 'share' | 'settings' | 'device' | 'auth';
+export type ActiveTab = 'home' | 'energy' | 'ai' | 'wallet' | 'share' | 'settings' | 'device' | 'auth';
 export type EnergyPeriod = 'today' | 'daily' | 'week' | 'month';
 export type AppRoute = 'landing' | 'client' | 'admin';
 

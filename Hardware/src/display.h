@@ -17,7 +17,7 @@ public:
   void updateLiveTelemetry(const SensorReadings &readings, const MeterState &state, bool wifiOk, int offlineQueued = 0);
 
   // Critical alerts & safety trips
-  void showTamperAlert(const char *reason);
+  void showTamperAlert(const char *reason = "CONTACT ADMIN   ");
   void showPowerCutoff(const char *reason);
   void showOvervoltageAlert(float voltage);
 

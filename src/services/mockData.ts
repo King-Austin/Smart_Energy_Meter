@@ -14,36 +14,35 @@ export const INITIAL_WALLET_TRANSACTIONS: WalletTransaction[] = [
   {
     id: 'TXN-9021',
     type: 'funding',
-    title: 'Wallet Funded',
-    description: 'Instant Bank Card Top Up (Visa •••• 4092)',
+    title: 'Instant Recharge',
+    description: 'Smart Meter Direct Credit (+62.50 kWh)',
     amount_currency: 10000,
-    units_kwh: 66.6,
+    units_kwh: 62.5,
     timestamp: 'Today, 2:15 PM',
-    status: 'successful',
-    token_number: '4820-9182-3910-4821'
+    status: 'successful'
   },
   {
     id: 'TXN-8840',
     type: 'shared_sent',
     title: 'Energy Shared',
     description: '1.42 kWh shared with Neighbour House',
-    amount_currency: 213,
+    amount_currency: 227,
     units_kwh: 1.42,
     timestamp: '14 Aug, 8:20 PM',
     status: 'successful'
   },
   {
     id: 'TXN-7731',
-    type: 'energy_purchase',
-    title: 'Electricity Token Purchase',
-    description: 'Purchased 33.3 kWh prepaid energy units',
+    type: 'funding',
+    title: 'Instant Recharge',
+    description: 'Smart Meter Direct Credit (+31.25 kWh)',
     amount_currency: 5000,
-    units_kwh: 33.3,
+    units_kwh: 31.25,
     timestamp: '10 Aug, 10:45 AM',
-    status: 'successful',
-    token_number: '1928-3849-5021-9941'
+    status: 'successful'
   }
 ];
+
 
 export const INITIAL_METER_DATA: MeterTelemetry = {
   meter_id: 'MTR-8A24-19F2',
@@ -58,34 +57,34 @@ export const INITIAL_METER_DATA: MeterTelemetry = {
   reactive_power: 0.0,
 
   // Wallet & Prepaid Units
-  wallet_balance: 7500,
-  prepaid_units_kwh: 100.0,
-  estimated_days_remaining: 30,
+  wallet_balance: 13992,
+  prepaid_units_kwh: 87.45,
+  estimated_days_remaining: 26,
   auto_topup_enabled: false,
   auto_topup_threshold: 1000,
 
-  energy_today: 0.0,
-  energy_yesterday: 0.0,
-  energy_week: 0.0,
-  energy_month: 0.0,
-  projected_month: 0.0,
+  energy_today: 1.28,
+  energy_yesterday: 4.85,
+  energy_week: 31.4,
+  energy_month: 92.6,
+  projected_month: 124.0,
 
-  estimated_cost_today: 0,
-  estimated_bill_month: 0,
-  projected_bill_month: 0,
+  estimated_cost_today: 204,
+  estimated_bill_month: 14816,
+  projected_bill_month: 19840,
 
   grid_status: 'offline',
   device_status: 'online',
   connection_quality: 'good',
 
-  battery_percentage: 100,
+  battery_percentage: 50,
   battery_status: 'battery',
 
   main_supply_connected: true,
   last_seen: 'Awaiting prototype...',
   firmware_version: 'v3.2',
 
-  tariff_rate: 68.5,
+  tariff_rate: 160.0,
   currency_symbol: '₦',
   currency_code: 'NGN',
 
@@ -98,21 +97,18 @@ export const INITIAL_METER_DATA: MeterTelemetry = {
   tamper_locked: false,
   is_tampered: false,
   wifi_rssi: -68,
-  free_heap_bytes: 185420,
-  uptime_seconds: 72400,
-  battery_mv: 3950,
-  max_voltage_limit: 250.0,
-  min_voltage_limit: 180.0,
-  bill_limit_threshold: 35000.0,
   voltage_cutoff_tripped: false,
-  bill_cutoff_tripped: false
+  bill_cutoff_tripped: false,
+  max_voltage_limit: 240,
+  min_voltage_limit: 180,
+  bill_limit_threshold: 35000
 };
 
 export const INITIAL_FLEET_METERS: MeterSummary[] = [
   {
     meter_id: 'MTR-8A24-19F2',
     meter_name: 'My Home (Live Prototype)',
-    location: 'Workbench Unit 1',
+    location: 'Flat 1 - Ground Floor',
     building_id: 'BLD-01',
     user_id: 'usr_9921',
     voltage: 0.0,
@@ -120,19 +116,21 @@ export const INITIAL_FLEET_METERS: MeterSummary[] = [
     active_power: 0.0,
     power_factor: 0.0,
     frequency: 0.0,
-    tariff_rate: 68.5,
+    wallet_balance: 13992,
+    prepaid_units_kwh: 87.45,
+    tariff_rate: 160.0,
     monthly_budget_naira: 25000,
     monthly_budget_kwh: 365,
     over_current_limit: 30.0,
-    energy_today: 0.0,
-    energy_month: 0.0,
+    energy_today: 1.28,
+    energy_month: 92.6,
     grid_status: 'offline',
     device_status: 'online',
     main_supply_connected: true,
     is_tampered: false,
     tamper_locked: false,
     wifi_rssi: -68,
-    battery_percentage: 100,
+    battery_percentage: 50,
     last_seen: 'Awaiting prototype packet...'
   }
 ];

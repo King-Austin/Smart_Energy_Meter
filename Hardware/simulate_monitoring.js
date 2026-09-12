@@ -96,12 +96,8 @@ async function sendPacketForMeter(meterProfile) {
     p_active_power: readings.activePower,
     p_power_factor: readings.powerFactor,
     p_frequency: readings.frequency,
-    p_energy_increment: readings.energyIncrement,
     p_is_tampered: readings.isTampered,
-    p_battery_percentage: 82,
-    p_wifi_rssi: -65 + Math.floor(Math.random() * 6),
-    p_free_heap: 185420 - Math.floor(Math.random() * 500),
-    p_uptime_sec: cycleCount * 3
+    p_is_relay_on: !readings.isTampered
   };
 
   try {

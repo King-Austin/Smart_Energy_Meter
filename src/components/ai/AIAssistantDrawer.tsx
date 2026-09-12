@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useMeter } from '../../context/MeterContext';
 import { askEnergyAssistant, getGroqApiKey, setGroqApiKey } from '../../services/aiService';
 import { Sparkles, X, Send, Bot, User, Zap, DollarSign, Clock, HelpCircle, Key, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { FormattedAIMessage } from './FormattedAIMessage';
 
 interface ChatMessage {
   id: string;
@@ -195,13 +196,15 @@ export const AIAssistantDrawer: React.FC = () => {
               <div
                 className={`max-w-[85%] p-3.5 rounded-2xl ${
                   msg.sender === 'user'
-                    ? 'bg-[#ff5b26] text-white rounded-br-xs shadow-xs'
+                    ? 'bg-[#ff5b26] text-white rounded-br-xs shadow-xs whitespace-pre-line leading-relaxed'
                     : 'bg-slate-100 dark:bg-neutral-800/90 text-slate-800 dark:text-neutral-200 rounded-bl-xs border border-slate-200 dark:border-neutral-700/60 shadow-xs'
                 }`}
               >
-                <div className="whitespace-pre-line leading-relaxed">
-                  {msg.text}
-                </div>
+                {msg.sender === 'user' ? (
+                  <div>{msg.text}</div>
+                ) : (
+                  <FormattedAIMessage content={msg.text} />
+                )}
                 <span
                   className={`text-[9px] block text-right mt-1.5 ${
                     msg.sender === 'user' ? 'text-white/75' : 'text-slate-500 dark:text-neutral-400'

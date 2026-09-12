@@ -18,18 +18,26 @@ void WirelessTerminalManager::begin(uint16_t port) {
   _head = 0;
   _wrapped = false;
 
-  // 1. Setup Web Server routes
+  // 1. Initialize mDNS Responder for http://voltrix-meter.local/
+  if (MDNS.begin("voltrix-meter")) {
+    MDNS.addService("http", "tcp", port);
+    this->println(F("[mDNS] Responder active at: http://voltrix-meter.local/"));
+  } else {
+    this->println(F("[mDNS] Error starting mDNS responder. Access via IP."));
+  }
+
+  // 2. Setup Web Server routes & Enable CORS
   setupWebRoutes();
+  _server.enableCORS(true);
   _server.begin(port);
 
-  // 2. Setup ArduinoOTA for Arduino IDE Network Port flashing
+  // 3. Setup ArduinoOTA for Arduino IDE Network Port flashing
   setupArduinoOTA();
 
   this->println(F("[WTERMINAL] Wireless Web Terminal & OTA initialized on port 80"));
-  this->printf("[WTERMINAL] Access terminal at: http://%s/ or http://voltrix-meter.local/\n",
-               WiFi.localIP().toString().c_str());
-  this->printf("[WTERMINAL] Access OTA Upload at: http://%s/update\n",
-               WiFi.localIP().toString().c_str());
+  this->printf("[WTERMINAL] Direct local IP: http://%s/\n", WiFi.localIP().toString().c_str());
+  this->printf("[WTERMINAL] Local hostname:  http://voltrix-meter.local/\n");
+  this->printf("[WTERMINAL] Web OTA Upload:  http://%s/update\n", WiFi.localIP().toString().c_str());
 }
 
 void WirelessTerminalManager::setupArduinoOTA() {
@@ -62,8 +70,8 @@ void WirelessTerminalManager::setupArduinoOTA() {
   });
 
   ArduinoOTA.begin();
-  MDNS.addService("http", "tcp", 80);
 }
+
 
 void WirelessTerminalManager::setupWebRoutes() {
   // 1. Root Terminal Page

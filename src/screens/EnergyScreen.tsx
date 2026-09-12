@@ -14,11 +14,11 @@ import {
   Activity,
   Gauge,
   Power,
-  Radio,
   Clock,
   Calendar,
   Sparkles
 } from 'lucide-react';
+import { formatPower, formatCurrency } from '../utils/formatters';
 
 export const EnergyScreen: React.FC = () => {
   const { meterData } = useMeter();
@@ -96,9 +96,9 @@ export const EnergyScreen: React.FC = () => {
           <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
             Energy Usage
           </h2>
-          <p className="text-xs text-slate-500 dark:text-neutral-400">
-            Real-time telemetry stream & live hardware power analytics
-          </p>
+          <span className="text-xs text-slate-500 dark:text-neutral-400">
+            Real-time telemetry & consumption analytics
+          </span>
         </div>
 
         {/* Segmented Period Switcher */}
@@ -142,95 +142,75 @@ export const EnergyScreen: React.FC = () => {
               ? meterData.energy_week.toFixed(1)
               : meterData.energy_month.toFixed(1)}
           </span>
-          <span className="text-xl font-bold text-slate-600 dark:text-slate-400">kWh</span>
+          <span className="text-sm font-bold text-slate-500">kWh</span>
         </div>
 
-        <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
-          {period === 'today'
-            ? 'Today’s live measured consumption from PZEM-004T (GPIO 16/17)'
-            : period === 'week'
-            ? 'Past 7 days aggregated hardware consumption'
-            : 'Monthly cumulative energy stored in non-volatile flash'}
-        </p>
-
         <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-200/80 dark:border-neutral-800 text-xs font-semibold">
-          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-            <Radio className="w-3.5 h-3.5 animate-pulse" />
-            <span>Live Prototype Telemetry Active</span>
-          </div>
+          <span className="text-slate-500 dark:text-neutral-400">
+            ₦{meterData.tariff_rate || 160.0}/kWh
+          </span>
 
           <span className="font-bold text-slate-900 dark:text-white mono-num">
-            Estimated Cost: {meterData.currency_symbol}
-            {period === 'today'
-              ? meterData.estimated_cost_today.toLocaleString()
-              : period === 'week'
-              ? (Math.round(meterData.energy_week * meterData.tariff_rate)).toLocaleString()
-              : (meterData.estimated_bill_month).toLocaleString()}
+            {formatCurrency(
+              period === 'today'
+                ? meterData.estimated_cost_today || (meterData.energy_today * (meterData.tariff_rate || 160.0))
+                : period === 'week'
+                ? meterData.energy_week * (meterData.tariff_rate || 160.0)
+                : meterData.estimated_bill_month || (meterData.energy_month * (meterData.tariff_rate || 160.0))
+            )}
           </span>
         </div>
       </div>
 
-      {/* Meter Live Electrical Load Metrics */}
+      {/* 4 Clean Metric Tiles */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <div className="p-3.5 rounded-2xl bg-white dark:bg-[#151b25] border border-slate-200 dark:border-neutral-800 shadow-2xs">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Gauge className="w-4 h-4 text-[#ff5b26]" />
-            <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
-              Peak Demand
+          <div className="flex items-center gap-1.5 mb-1 text-slate-500 dark:text-neutral-400">
+            <Gauge className="w-3.5 h-3.5 text-[#ff5b26]" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">
+              Peak
             </span>
           </div>
           <span className="text-xl font-black text-slate-900 dark:text-white mono-num block">
-            {peakHourlyEntry && peakHourlyEntry.kwh > 0 ? `${(peakHourlyEntry.watts).toFixed(0)} W` : `${(meterData.active_power * 1000).toFixed(0)} W`}
-          </span>
-          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block truncate">
-            {peakHourlyEntry && peakHourlyEntry.kwh > 0 ? `At ${peakHourlyEntry.hourLabel}` : 'Live active draw'}
+            {formatPower((peakHourlyEntry && peakHourlyEntry.kwh > 0 ? peakHourlyEntry.watts : (meterData.active_power * 1000)) / 1000).full}
           </span>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-white dark:bg-[#151b25] border border-slate-200 dark:border-neutral-800 shadow-2xs">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Activity className="w-4 h-4 text-emerald-500" />
-            <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 mb-1 text-slate-500 dark:text-neutral-400">
+            <Activity className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">
               Power Factor
             </span>
           </div>
           <span className="text-xl font-black text-slate-900 dark:text-white mono-num block">
             {meterData.power_factor > 0 ? meterData.power_factor.toFixed(2) : '1.00'}
           </span>
-          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block truncate">
-            Freq: {meterData.frequency.toFixed(1)} Hz
-          </span>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-white dark:bg-[#151b25] border border-slate-200 dark:border-neutral-800 shadow-2xs">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Power className="w-4 h-4 text-[#ff5b26]" />
-            <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
-              Mains Relay (D13)
+          <div className="flex items-center gap-1.5 mb-1 text-slate-500 dark:text-neutral-400">
+            <Power className="w-3.5 h-3.5 text-[#ff5b26]" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">
+              Contactor
             </span>
           </div>
-          <span className={`text-sm font-black mono-num block ${
+          <span className={`text-base font-black mono-num block ${
             meterData.main_supply_connected ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'
           }`}>
-            {meterData.main_supply_connected ? 'CLOSED (ON)' : 'OPEN (OFF)'}
-          </span>
-          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block truncate">
-            {meterData.hardware_relay_ack ? 'Hardware Confirmed' : 'Syncing state...'}
+            {meterData.main_supply_connected ? 'ON' : 'CUT'}
           </span>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-white dark:bg-[#151b25] border border-slate-200 dark:border-neutral-800 shadow-2xs">
-          <div className="flex items-center gap-2 mb-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#ff5b26]" />
-            <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
-              Voltage Guard
+          <div className="flex items-center gap-1.5 mb-1 text-slate-500 dark:text-neutral-400">
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-500" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">
+              Grid Voltage
             </span>
           </div>
-          <span className="text-sm font-black text-slate-900 dark:text-white mono-num block">
-            {meterData.min_voltage_limit}V – {meterData.max_voltage_limit}V
-          </span>
-          <span className="text-[10px] font-bold text-slate-500 dark:text-neutral-400 mt-0.5 block truncate">
-            Grid: {meterData.voltage.toFixed(1)}V
+          <span className="text-xl font-black text-slate-900 dark:text-white mono-num block">
+            {meterData.voltage.toFixed(0)} V
           </span>
         </div>
       </div>

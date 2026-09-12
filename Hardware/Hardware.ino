@@ -103,9 +103,6 @@ void connectWiFi() {
     Serial.print(F("[WIFI] Assigned IP: "));
     Serial.println(WiFi.localIP());
 
-    // Melodic Wi-Fi connection chime
-    Buzzer.play(BuzzerTone::WIFI_CONNECTED);
-
     // Initialize Wireless Web Console & Web OTA Server
     WTerminal.begin(80);
 
@@ -138,7 +135,6 @@ void setup() {
   digitalWrite(LED_ALARM_PIN, LOW);
 
   Buzzer.begin();
-  Buzzer.play(BuzzerTone::BOOT_CHIME); // Cheerful ascending boot chime
 
   // 2. Initialize Visual Display (1602/2004 I2C LCD)
   Display.begin();
@@ -157,9 +153,16 @@ void setup() {
   meter.isTampered = nvs.getBool("tamper", false);
   meter.tamperReason = TamperType::NONE;
 
-  // 5. Contactor Relay Default State: SNAPPED ON AT BOOT
-  Serial.println(F("[RELAY] Energizing Main Contactor Relay on D13..."));
-  setRelay(true);
+  // 5. Contactor Relay Default State: Single crisp beep at boot if untampered
+  if (!meter.isTampered) {
+    Serial.println(F("[RELAY] Energizing Main Contactor Relay on D13..."));
+    setRelay(true);
+  } else {
+    Serial.println(F("[RELAY] Tamper latched from previous session - keeping contactor ISOLATED."));
+    setRelay(false);
+    Buzzer.startAlarm(BuzzerTone::TAMPER_ALARM);
+    Display.showTamperAlert("CONTACT ADMIN   ");
+  }
 
   // 6. Connect to Wi-Fi
   connectWiFi();
@@ -223,16 +226,18 @@ void loop() {
   // -----------------------------------------------------------------
   // 5. REAL-TIME SAFETY & LID TAMPER MONITORING (SS-5GL on D32)
   // -----------------------------------------------------------------
-  bool tamperActive = false;
-  if (Sensors.checkTamperConditions(meter, currentReadings)) {
-    tamperActive = true;
+  bool physicalTamper = Sensors.checkTamperConditions(meter, currentReadings);
+  if (physicalTamper || meter.isTampered) {
     if (meter.isRelayOn) {
-      Serial.println(F("\n🚨 [SECURITY ALARM] SS-5GL Lid Tamper Triggered! Immediate Contactor Lockout!"));
+      Serial.println(F("\n🚨 [SECURITY ALARM] Tamper Active! Immediate Contactor Lockout!"));
       setRelay(false);
       saveNVS();
     }
-    Display.showTamperAlert("LID BREACH TRIP");
+    Display.showTamperAlert("CONTACT ADMIN   ");
     digitalWrite(LED_ALARM_PIN, HIGH);
+    if (!Buzzer.isAlarmActive()) {
+      Buzzer.startAlarm(BuzzerTone::TAMPER_ALARM);
+    }
   }
 
   // Dynamic Overvoltage Safety Cutoff (checks against dynamic limit meter.maxVoltageLimit)
@@ -289,12 +294,8 @@ void loop() {
     Sensors.readSensors(currentReadings);
 
     // 2. Update Physical LCD Display (if no active high-priority safety trip)
-    if (!tamperActive && meter.remainingKwh > 0.0f && currentReadings.voltage < meter.maxVoltageLimit) {
-      if (!meter.isRelayOn && now < remoteCutoffBannerUntil) {
-        Display.showPowerCutoff("MOBILE APP CUT  ");
-      } else {
-        Display.updateLiveTelemetry(currentReadings, meter, wifiOnline, offlineQueueCount);
-      }
+    if (!meter.isTampered && meter.remainingKwh > 0.0f && currentReadings.voltage < meter.maxVoltageLimit) {
+      Display.updateLiveTelemetry(currentReadings, meter, wifiOnline, offlineQueueCount);
     }
 
     // 3. Serial & Wireless Terminal Real-Time Telemetry Report
@@ -416,8 +417,9 @@ void loop() {
                         sync.mainSupplyConnected ? "CONNECTED" : "DISCONNECTED");
           setRelay(false);
           saveNVS();
-          Display.showPowerCutoff(sync.voltageCutoffTripped ? "VOLT CUTOFF TRIP" : "MOBILE APP CUT  ");
-          remoteCutoffBannerUntil = now + 4000;
+          if (sync.voltageCutoffTripped) {
+            Display.showPowerCutoff("VOLT CUTOFF TRIP");
+          }
         }
         // Snap ON if:
         // Cloud requested ON, no voltage cutoff trip, currently OFF, and not tamper locked

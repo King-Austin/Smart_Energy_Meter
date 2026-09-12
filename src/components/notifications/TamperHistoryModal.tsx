@@ -68,7 +68,7 @@ export const TamperHistoryModal: React.FC<TamperHistoryModalProps> = ({ isOpen, 
             </div>
             <div>
               <h3 className="text-base font-extrabold text-neutral-900 dark:text-white">
-                Tamper Forensics & Audit Log
+                Tamper History & Unlock
               </h3>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {meterData.meter_name} ({meterData.meter_id})
@@ -108,8 +108,8 @@ export const TamperHistoryModal: React.FC<TamperHistoryModalProps> = ({ isOpen, 
             </div>
             <p className="text-xs mt-1 opacity-90">
               {hasActiveTamper
-                ? 'The SS-5GL limit switch was triggered (enclosure lid opened). Power is isolated for safety. Enter Admin PIN below to restore supply.'
-                : 'All physical limit switches and circuits are intact. No active tamper flags.'}
+                ? 'Enclosure lid opened. Power disconnected for safety. Enter Admin PIN below to restore supply.'
+                : 'Enclosure is closed and secure. No active tamper alerts.'}
             </p>
           </div>
 
@@ -154,7 +154,7 @@ export const TamperHistoryModal: React.FC<TamperHistoryModalProps> = ({ isOpen, 
                 disabled={isSubmitting || adminPin.length !== 4}
                 className="w-full py-2.5 px-4 rounded-xl bg-[#ff5b26] hover:bg-[#e04f1e] text-white font-bold text-xs transition-colors disabled:opacity-50"
               >
-                {isSubmitting ? 'Verifying...' : 'Clear Tamper Lock & Re-energize Supply'}
+                {isSubmitting ? 'Verifying...' : 'Clear Tamper & Restore Power'}
               </button>
             </form>
           )}

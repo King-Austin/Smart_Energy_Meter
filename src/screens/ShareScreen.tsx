@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   ArrowUpRight,
   ArrowDownLeft,
+  ChevronLeft,
   X
 } from 'lucide-react';
 
@@ -24,7 +25,8 @@ export const ShareScreen: React.FC = () => {
     startSharing,
     stopSharing,
     stopReceiving,
-    searchRecipients
+    searchRecipients,
+    setActiveTab
   } = useMeter();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,14 +55,23 @@ export const ShareScreen: React.FC = () => {
   return (
     <div className="space-y-4 pb-10 animate-fade-in text-slate-900 dark:text-neutral-100">
       
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-          Energy Share
-        </h2>
-        <p className="text-xs text-slate-500 dark:text-neutral-400">
-          Cloud-synchronized peer-to-peer energy transfer between meters
-        </p>
+      {/* Header with Back Navigation */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setActiveTab('settings')}
+          className="p-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white cursor-pointer shadow-2xs transition-colors"
+          title="Back to Settings"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            Peer-to-Peer Energy Sharing
+          </h2>
+          <span className="text-xs text-slate-500 dark:text-neutral-400">
+            Transfer prepaid units between submeters
+          </span>
+        </div>
       </div>
 
       {/* 1. ACTIVE SENDING SESSION HUD */}

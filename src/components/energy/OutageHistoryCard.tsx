@@ -19,7 +19,7 @@ export const OutageHistoryCard: React.FC = () => {
           </div>
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-              Grid Outage & Blackout Forensics
+              Power Outages
             </h3>
           </div>
         </div>
@@ -31,28 +31,28 @@ export const OutageHistoryCard: React.FC = () => {
               : 'text-emerald-500 bg-emerald-500/15 border-emerald-500/30'
           }`}
         >
-          {isCurrentlyOffline ? 'Blackout Active (Battery)' : 'Grid Live'}
+          {isCurrentlyOffline ? 'Outage Active' : 'Grid Live'}
         </span>
       </div>
 
       {/* Summary KPI Grid */}
       <div className="grid grid-cols-3 gap-2 text-center pt-1">
         <div className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800">
-          <span className="text-[9px] font-bold text-neutral-500 uppercase block">Outages Logged</span>
+          <span className="text-[9px] font-bold text-neutral-500 uppercase block">Outages</span>
           <span className="text-base font-extrabold text-neutral-900 dark:text-white mono-num">
             {outageLogs.length}
           </span>
         </div>
 
         <div className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800">
-          <span className="text-[9px] font-bold text-neutral-500 uppercase block">Total Downtime</span>
+          <span className="text-[9px] font-bold text-neutral-500 uppercase block">Downtime</span>
           <span className="text-base font-extrabold text-neutral-900 dark:text-white mono-num">
             {downtimeHours} <span className="text-xs font-normal">hrs</span>
           </span>
         </div>
 
         <div className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800">
-          <span className="text-[9px] font-bold text-neutral-500 uppercase block">Grid Uptime</span>
+          <span className="text-[9px] font-bold text-neutral-500 uppercase block">Uptime</span>
           <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mono-num">
             {outageLogs.length === 0 ? '100%' : '97.2%'}
           </span>
@@ -62,13 +62,13 @@ export const OutageHistoryCard: React.FC = () => {
       {/* Outage Log Timeline */}
       <div className="space-y-1.5 pt-1">
         <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">
-          Recent Grid Outage Events
+          Recent Events
         </span>
 
         {outageLogs.length === 0 ? (
           <div className="p-3 rounded-xl bg-neutral-100/60 dark:bg-neutral-900/60 text-center text-xs text-neutral-500">
             <ShieldCheck className="w-4 h-4 mx-auto mb-1 text-emerald-500" />
-            No blackout incidents recorded for this submeter.
+            No outage incidents recorded.
           </div>
         ) : (
           <div className="space-y-1.5 max-h-48 overflow-y-auto">

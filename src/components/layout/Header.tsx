@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMeter } from '../../context/MeterContext';
-import { Bell, Moon, Sun, Sliders, ZapOff, WifiOff, Building2, Globe } from 'lucide-react';
+import { Bell, Moon, Sun, ZapOff, WifiOff } from 'lucide-react';
 
 interface HeaderProps {
   onOpenNotifications: () => void;
@@ -12,9 +12,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
     theme,
     toggleTheme,
     unreadNotificationCount,
-    setIsSimPanelOpen,
-    setActiveTab,
-    navigateToRoute
+    setActiveTab
   } = useMeter();
 
   const isMeterOffline = meterData.device_status === 'offline';
@@ -71,23 +69,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
           </div>
         </div>
 
-        {/* Right: Utility & Theme Controls */}
-        <div className="flex items-center gap-1">
-          {/* Demo Simulation Controller Toggle */}
-          <button
-            onClick={() => setIsSimPanelOpen(true)}
-            className="p-2.5 rounded-2xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors relative"
-            title="Demo & Hardware Simulator"
-            aria-label="Open Demo Simulator"
-          >
-            <Sliders className="w-4 h-4 text-[#ff5b26]" />
-            <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#ff5b26]"></span>
-          </button>
-
+        {/* Right: Utility Controls (Theme + Minimalist Notifications) */}
+        <div className="flex items-center gap-1.5">
           {/* Theme Toggle (Light / Dark) */}
           <button
             onClick={toggleTheme}
-            className="p-2.5 rounded-2xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
+            className="p-2.5 rounded-2xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800/80 transition-colors"
             title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
             aria-label="Toggle Theme"
           >
@@ -98,38 +85,16 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
             )}
           </button>
 
-          {/* Landing Page & Download Switcher */}
-          <button
-            onClick={() => navigateToRoute('landing')}
-            className="p-2.5 rounded-2xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 hover:text-[#ff5b26] transition-colors"
-            title="Voltrix Landing Page & APK Download"
-            aria-label="Landing Page"
-          >
-            <Globe className="w-4 h-4" />
-          </button>
-
-          {/* Super Admin Portal Switcher */}
-          <button
-            onClick={() => navigateToRoute('admin')}
-            className="p-2.5 rounded-2xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 hover:text-[#ff5b26] transition-colors"
-            title="Super Admin Portal (View All Submeters)"
-            aria-label="Super Admin Portal"
-          >
-            <Building2 className="w-4 h-4" />
-          </button>
-
-          {/* Notifications Bell */}
+          {/* Minimalist Notifications Bell */}
           <button
             onClick={onOpenNotifications}
-            className="p-2.5 rounded-2xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors relative"
-            title="Notifications"
+            className="p-2.5 rounded-2xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800/80 transition-colors relative"
+            title="System Alerts & Notifications"
             aria-label="Notifications"
           >
             <Bell className="w-4 h-4 text-slate-700 dark:text-neutral-300" />
             {unreadNotificationCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#ff5b26] text-[10px] font-bold text-white rounded-full flex items-center justify-center shadow-xs">
-                {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
-              </span>
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#ff5b26] ring-2 ring-white dark:ring-[#0d1219]"></span>
             )}
           </button>
         </div>

@@ -9,7 +9,10 @@ import {
   Zap,
   HelpCircle,
   Radio,
-  ArrowUpRight
+  ArrowUpRight,
+  Globe,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
 
 export const WirelessConsoleCard: React.FC = () => {
@@ -19,14 +22,50 @@ export const WirelessConsoleCard: React.FC = () => {
   const [autoScroll, setAutoScroll] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
   const [espIp, setEspIp] = useState<string>(() => {
-    return localStorage.getItem('voltrix_esp32_ip') || '192.168.1.100';
+    return localStorage.getItem('voltrix_esp32_ip') || '10.28.133.209';
   });
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
+  const [testMessage, setTestMessage] = useState<string>('');
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   // Save IP to localStorage on change
   const handleIpChange = (newIp: string) => {
     setEspIp(newIp);
     localStorage.setItem('voltrix_esp32_ip', newIp);
+  };
+
+  // Test local Wi-Fi connectivity to ESP32
+  const testLocalConnection = async (target: 'ip' | 'mdns') => {
+    setTestStatus('testing');
+    const url = target === 'mdns' ? 'http://voltrix-meter.local/api/status' : `http://${espIp}/api/status`;
+    setTestMessage(`Testing connection to ${url}...`);
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const res = await fetch(url, { signal: controller.signal, mode: 'cors' });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        setTestStatus('success');
+        setTestMessage(`Connected directly! ESP32 online on LAN (${data.voltage || 0}V, relay: ${data.relay ? 'ON' : 'OFF'}).`);
+      } else {
+        setTestStatus('failed');
+        setTestMessage(`Server reached but returned HTTP ${res.status}.`);
+      }
+    } catch {
+      setTestStatus('failed');
+      if (target === 'mdns') {
+        setTestMessage(
+          'Could not resolve "voltrix-meter.local". Note: Android Chrome & some routers block .local mDNS queries. Please test the direct IP address instead.'
+        );
+      } else {
+        setTestMessage(
+          `Could not connect to ${espIp}. Make sure your phone/PC and ESP32 are on the exact same Wi-Fi network ('testmode'), or check the IP on the meter's LCD display.`
+        );
+      }
+    }
   };
 
   // 1. Initial Load of recent telemetry logs
@@ -79,60 +118,106 @@ export const WirelessConsoleCard: React.FC = () => {
 
         <button
           onClick={() => setShowGuide(!showGuide)}
-          className="text-xs font-bold text-[#ff5b26] hover:underline flex items-center gap-1"
+          className="text-xs font-bold text-[#ff5b26] hover:underline flex items-center gap-1 cursor-pointer"
         >
           <HelpCircle className="w-3.5 h-3.5" />
-          <span>{showGuide ? 'Hide OTA Guide' : 'How to Flash Wirelessly'}</span>
+          <span>{showGuide ? 'Hide Wi-Fi Guide' : 'Wi-Fi & Connection Troubleshooting'}</span>
         </button>
       </div>
 
-      {/* OTA & Safety Guide Accordion */}
+      {/* Troubleshooting Accordion */}
       {showGuide && (
         <div className="p-4 rounded-xl bg-slate-100 dark:bg-neutral-800/70 border border-slate-200 dark:border-neutral-700 text-xs text-slate-700 dark:text-slate-300 space-y-2.5 animate-fade-in">
-          <div className="flex items-center gap-1.5 font-bold text-amber-600 dark:text-amber-400">
-            <span>⚠️ Safety Notice Regarding Direct Power / Mains AC:</span>
+          <div className="flex items-center gap-1.5 font-bold text-[#ff5b26]">
+            <span>📶 Why voltrix-meter.local or Wi-Fi Direct may not open:</span>
           </div>
-          <p className="text-[11px] leading-relaxed">
-            If your board is powered by direct mains AC or an unisolated bench supply, <strong>never plug the USB cable into your computer at the same time</strong>, as this can cause ground loops or damage your computer's USB port.
-          </p>
-          <div className="space-y-1.5 text-[11px]">
-            <p className="font-bold text-slate-900 dark:text-white">The Safe 1-Time Wireless Setup Workflow:</p>
-            <ol className="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-400">
-              <li><strong>Disconnect / unplug the direct power cord</strong> completely from the prototype.</li>
-              <li>Plug your USB cable from your laptop into the ESP32 safely.</li>
-              <li>In Arduino IDE, upload the updated <code className="text-[#ff5b26]">Hardware.ino</code> once.</li>
-              <li>Unplug the USB cable from the ESP32.</li>
-              <li>Reconnect direct power / mains supply.</li>
-              <li><strong>From then on, you NEVER need a USB cable again!</strong> You can view the live serial monitor wirelessly in your browser or upload new firmware via the Web OTA page below.</li>
-            </ol>
-          </div>
+          <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed text-slate-600 dark:text-neutral-300">
+            <li>
+              <strong>Android Chrome does not support .local mDNS names</strong>: If you are testing on an Android phone, Chrome will not resolve <code className="text-[#ff5b26]">http://voltrix-meter.local/</code>. Use the <strong>ESP32 Direct IP</strong> instead (shown on the LCD screen at boot, e.g. <code className="text-[#ff5b26]">http://10.28.133.209/</code>).
+            </li>
+            <li>
+              <strong>Same Wi-Fi Network Required</strong>: Your phone/computer must be connected to the exact same Wi-Fi router / mobile hotspot as the ESP32 (SSID: <code className="text-[#ff5b26]">testmode</code>).
+            </li>
+            <li>
+              <strong>Router Client Isolation</strong>: Some enterprise/public Wi-Fi networks block device-to-device communication on the LAN. In this case, the <strong>Cloud Sync (Supabase)</strong> monitor below continues to work seamlessly anywhere in the world!
+            </li>
+          </ol>
         </div>
       )}
 
-      {/* ESP32 Local IP & Direct Browser Portal Links */}
-      <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200/80 dark:border-neutral-800/80 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Wifi className="w-4 h-4 text-emerald-500" />
-          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">ESP32 IP on Wi-Fi:</span>
-          <input
-            type="text"
-            value={espIp}
-            onChange={(e) => handleIpChange(e.target.value)}
-            placeholder="e.g. 192.168.1.100"
-            className="w-32 px-2 py-1 text-xs font-mono rounded-lg border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-900 dark:text-white"
-          />
-          <span className="text-[10px] text-slate-500">(Check LCD screen at boot)</span>
+      {/* Dual Direct Browser Portal Links */}
+      <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200/80 dark:border-neutral-800/80 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <Wifi className="w-4 h-4 text-emerald-500" />
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Local ESP32 IP:</span>
+            <input
+              type="text"
+              value={espIp}
+              onChange={(e) => handleIpChange(e.target.value)}
+              placeholder="10.28.133.209"
+              className="w-32 px-2 py-1 text-xs font-mono rounded-lg border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-900 dark:text-white focus:outline-none focus:border-[#ff5b26]"
+            />
+            <span className="text-[10px] text-slate-500">(from LCD screen)</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => testLocalConnection('ip')}
+              disabled={testStatus === 'testing'}
+              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-300 transition-all cursor-pointer"
+            >
+              Test IP Ping
+            </button>
+            <button
+              onClick={() => testLocalConnection('mdns')}
+              disabled={testStatus === 'testing'}
+              className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-300 transition-all cursor-pointer"
+            >
+              Test .local Ping
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Test Result Feedback Pill */}
+        {testStatus !== 'idle' && (
+          <div
+            className={`p-2.5 rounded-xl text-xs flex items-start gap-2 border ${
+              testStatus === 'testing'
+                ? 'bg-sky-500/10 border-sky-500/25 text-sky-700 dark:text-sky-300'
+                : testStatus === 'success'
+                ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300'
+                : 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300'
+            }`}
+          >
+            {testStatus === 'testing' && <RefreshCw className="w-3.5 h-3.5 animate-spin mt-0.5 shrink-0" />}
+            {testStatus === 'success' && <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" />}
+            {testStatus === 'failed' && <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />}
+            <span className="text-[11px] leading-relaxed">{testMessage}</span>
+          </div>
+        )}
+
+        {/* Fast Browser Action Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
           <a
             href={`http://${espIp}/`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#ff5b26]/10 text-[#ff5b26] hover:bg-[#ff5b26]/20 border border-[#ff5b26]/25 flex items-center gap-1.5 transition-all shadow-xs"
+            className="px-3 py-2 rounded-xl text-xs font-bold bg-[#ff5b26]/10 text-[#ff5b26] hover:bg-[#ff5b26]/20 border border-[#ff5b26]/25 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
           >
             <Terminal className="w-3.5 h-3.5" />
-            <span>Open ESP32 Console</span>
+            <span>Open via IP ({espIp})</span>
+            <ArrowUpRight className="w-3 h-3" />
+          </a>
+
+          <a
+            href="http://voltrix-meter.local/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 rounded-xl text-xs font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 border border-sky-500/25 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>Open voltrix-meter.local</span>
             <ArrowUpRight className="w-3 h-3" />
           </a>
 
@@ -140,10 +225,10 @@ export const WirelessConsoleCard: React.FC = () => {
             href={`http://${espIp}/update`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/25 flex items-center gap-1.5 transition-all shadow-xs"
+            className="px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/25 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
           >
             <Zap className="w-3.5 h-3.5" />
-            <span>Web OTA Uploader</span>
+            <span>Web OTA Update</span>
             <ExternalLink className="w-3 h-3" />
           </a>
         </div>
@@ -154,7 +239,7 @@ export const WirelessConsoleCard: React.FC = () => {
         {/* Terminal Top Control Bar */}
         <div className="px-3.5 py-2 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-mono font-bold text-slate-300">Live Hardware Stream (Cloud Sync)</span>
             <span className="text-[10px] text-slate-500 font-mono">2s Cycle</span>
           </div>
@@ -173,7 +258,7 @@ export const WirelessConsoleCard: React.FC = () => {
             <button
               onClick={loadLogs}
               disabled={isLoading}
-              className="p-1 hover:text-white transition-colors"
+              className="p-1 hover:text-white transition-colors cursor-pointer"
               title="Refresh logs"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />

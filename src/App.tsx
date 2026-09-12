@@ -5,6 +5,7 @@ import { HomeScreen } from './screens/HomeScreen';
 import { EnergyScreen } from './screens/EnergyScreen';
 import { WalletScreen } from './screens/WalletScreen';
 import { ShareScreen } from './screens/ShareScreen';
+import { AIScreen } from './screens/AIScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { DeviceDetailsScreen } from './screens/DeviceDetailsScreen';
 import { AuthScreen } from './screens/AuthScreen';
@@ -56,6 +57,7 @@ const MainNavigator: React.FC = () => {
       <AppShell>
         {activeTab === 'home' && <HomeScreen />}
         {activeTab === 'energy' && <EnergyScreen />}
+        {activeTab === 'ai' && <AIScreen />}
         {activeTab === 'wallet' && <WalletScreen />}
         {activeTab === 'share' && <ShareScreen />}
         {activeTab === 'settings' && <SettingsScreen />}

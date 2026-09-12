@@ -99,9 +99,9 @@ export const EnergyFlowDiagram: React.FC = () => {
             {/* Path 3: Central Bus -> Battery (Right) */}
             <path
               d="M 160 25 L 240 55"
-              stroke={meterData.battery_status === 'charging' ? '#10b981' : '#64748b'}
+              stroke="#64748b"
               strokeWidth="2"
-              className={meterData.battery_status === 'charging' ? 'animate-flow-line' : ''}
+              strokeDasharray="4 4"
             />
           </svg>
         </div>
@@ -150,16 +150,16 @@ export const EnergyFlowDiagram: React.FC = () => {
                 <Battery className="w-3.5 h-3.5" />
               </div>
             </div>
-            <div className="flex items-baseline gap-1">
+            <div className="flex items-baseline gap-1.5">
               <span className="text-base font-extrabold text-slate-900 dark:text-white mono-num">
-                {meterData.battery_percentage}%
+                50%
               </span>
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 capitalize">
-                {meterData.battery_status}
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-neutral-400">
+                Standby Buffer
               </span>
             </div>
             <span className="text-[10px] text-slate-500 dark:text-neutral-400 block mt-0.5 font-medium">
-              {isGridOnline ? 'Trickle standby buffer' : 'Operating during outage'}
+              Internal RTC & memory backup
             </span>
           </div>
 

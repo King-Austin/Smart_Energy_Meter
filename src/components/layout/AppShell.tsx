@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useMeter } from '../../context/MeterContext';
 import { Header } from './Header';
 import { BottomNavigation } from './BottomNavigation';
-import { SimulationDrawer } from './SimulationDrawer';
 import { NotificationDrawer } from '../notifications/NotificationDrawer';
 import { registerBackHandler } from '../../services/navigationService';
 import { WifiOff, ZapOff, ArrowLeft } from 'lucide-react';
@@ -53,7 +52,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2.5 flex items-center gap-2.5 text-xs text-amber-300 animate-slide-up">
           <ZapOff className="w-4 h-4 flex-shrink-0 text-amber-400" />
           <div className="flex-1 leading-snug">
-            <span className="font-semibold">Grid Power Outage:</span> Meter is operating on internal backup battery ({meterData.battery_percentage}%).
+            <span className="font-semibold">Grid Power Outage:</span> Meter is operating on internal backup battery (50%).
           </div>
         </div>
       )}
@@ -80,7 +79,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {showBottomNav && <BottomNavigation />}
 
       {/* Drawers */}
-      <SimulationDrawer />
       <NotificationDrawer
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}

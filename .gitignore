@@ -52,3 +52,7 @@ android/*.iml
 Voltrix-SmartMeter-debug.apk
 *.tmp
 
+# Prevent recursive nested APK packaging
+android/app/src/main/assets/public/*.apk
+dist/*.apk
+

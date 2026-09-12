@@ -68,7 +68,7 @@ export const TamperQuickActionBar: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-600 dark:text-neutral-300">
-              Contactor relay open. Tenant load disconnected. Clear tamper to reconnect supply.
+              Load disconnected. Clear tamper to restore power.
             </p>
           </div>
         </div>

@@ -215,8 +215,8 @@ void MeterDisplay::updateLiveTelemetry(const SensorReadings &readings, const Met
 
 void MeterDisplay::showTamperAlert(const char *reason) {
   if (!_lcdFound) return;
-  printLine(0, "! TAMPER ALARM !");
-  printLine(1, reason);
+  printLine(0, "TAMPER DETECTED ");
+  printLine(1, reason != nullptr ? reason : "CONTACT ADMIN   ");
 }
 
 void MeterDisplay::showPowerCutoff(const char *reason) {
