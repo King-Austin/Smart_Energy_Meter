@@ -23,6 +23,13 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
+const ANAMBRA_LGAS = [
+  'Aguata', 'Anambra East', 'Anambra West', 'Anaocha', 'Awka North', 
+  'Awka South', 'Ayamelum', 'Dunukofia', 'Ekwusigo', 'Idemili North', 
+  'Idemili South', 'Ihiala', 'Njikoka', 'Nnewi North', 'Nnewi South', 
+  'Ogbaru', 'Onitsha North', 'Onitsha South', 'Orumba North', 'Orumba South', 'Oyi'
+];
+
 export const SettingsScreen: React.FC = () => {
   const {
     meterData,
@@ -462,23 +469,36 @@ export const SettingsScreen: React.FC = () => {
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-1">State</label>
-            <input
-              type="text"
-              value={profileState}
-              onChange={(e) => setProfileState(e.target.value)}
-              placeholder="e.g. Lagos"
-              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#ff5b26]"
-            />
+            <div className="relative">
+              <select
+                value="Anambra"
+                onChange={(e) => setProfileState(e.target.value)}
+                className="w-full px-3 py-2 pr-8 text-xs rounded-xl bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#ff5b26] appearance-none"
+              >
+                <option value="Anambra">Anambra State</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                <ChevronRight className="w-3.5 h-3.5 rotate-90" />
+              </div>
+            </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-1">Local Government Area (LGA)</label>
-            <input
-              type="text"
-              value={profileLga}
-              onChange={(e) => setProfileLga(e.target.value)}
-              placeholder="e.g. Ikeja"
-              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#ff5b26]"
-            />
+            <div className="relative">
+              <select
+                value={profileLga}
+                onChange={(e) => setProfileLga(e.target.value)}
+                className="w-full px-3 py-2 pr-8 text-xs rounded-xl bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#ff5b26] appearance-none"
+              >
+                <option value="" disabled>Select your LGA</option>
+                {ANAMBRA_LGAS.map((lga) => (
+                  <option key={lga} value={lga}>{lga}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                <ChevronRight className="w-3.5 h-3.5 rotate-90" />
+              </div>
+            </div>
           </div>
         </div>
 
