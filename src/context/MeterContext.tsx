@@ -187,7 +187,7 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return 'light'; // Light mode by default with Voltrix branding!
   });
 
-  // Dedicated Route State: 'client' (consumer dashboard) vs 'admin' (super admin portal)
+  // Dedicated Route State: 'landing' (showcase & APK download), 'client' (consumer dashboard), 'admin' (super admin portal)
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash;
@@ -195,8 +195,15 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (hash === '#/admin' || hash === '#admin' || path === '/admin') {
         return 'admin';
       }
+      if (hash === '#/app' || hash === '#/dashboard' || hash === '#/client' || hash === '#app' || hash === '#dashboard' || path === '/dashboard' || path === '/app') {
+        return 'client';
+      }
+      if ((window as any).Capacitor && typeof (window as any).Capacitor.isNativePlatform === 'function' && (window as any).Capacitor.isNativePlatform()) {
+        return 'client';
+      }
+      return 'landing';
     }
-    return 'client';
+    return 'landing';
   });
 
   // Client Dashboard Inspection Mode for Super Admin
@@ -205,13 +212,24 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const navigateToRoute = useCallback((route: AppRoute) => {
     setCurrentRoute(route);
     if (typeof window !== 'undefined') {
-      window.location.hash = route === 'admin' ? '#/admin' : '#/';
+      if (route === 'admin') {
+        window.location.hash = '#/admin';
+      } else if (route === 'client') {
+        window.location.hash = '#/app';
+      } else {
+        window.location.hash = '#/';
+      }
       const rootEl = document.getElementById('root');
       if (rootEl) {
         if (route === 'admin') {
           rootEl.classList.add('admin-layout');
+          rootEl.classList.remove('landing-layout');
+        } else if (route === 'landing') {
+          rootEl.classList.add('landing-layout');
+          rootEl.classList.remove('admin-layout');
         } else {
           rootEl.classList.remove('admin-layout');
+          rootEl.classList.remove('landing-layout');
         }
       }
     }
@@ -222,15 +240,28 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const handleLocationChange = () => {
       const hash = window.location.hash;
       const path = window.location.pathname;
-      const isAdm = hash === '#/admin' || hash === '#admin' || path === '/admin';
-      const targetRoute = isAdm ? 'admin' : 'client';
+      let targetRoute: AppRoute = 'landing';
+      if (hash === '#/admin' || hash === '#admin' || path === '/admin') {
+        targetRoute = 'admin';
+      } else if (hash === '#/app' || hash === '#/dashboard' || hash === '#/client' || hash === '#app' || hash === '#dashboard' || path === '/dashboard' || path === '/app') {
+        targetRoute = 'client';
+      } else if ((window as any).Capacitor && typeof (window as any).Capacitor.isNativePlatform === 'function' && (window as any).Capacitor.isNativePlatform()) {
+        targetRoute = 'client';
+      } else {
+        targetRoute = 'landing';
+      }
       setCurrentRoute(targetRoute);
       const rootEl = document.getElementById('root');
       if (rootEl) {
         if (targetRoute === 'admin') {
           rootEl.classList.add('admin-layout');
+          rootEl.classList.remove('landing-layout');
+        } else if (targetRoute === 'landing') {
+          rootEl.classList.add('landing-layout');
+          rootEl.classList.remove('admin-layout');
         } else {
           rootEl.classList.remove('admin-layout');
+          rootEl.classList.remove('landing-layout');
         }
       }
     };

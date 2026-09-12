@@ -251,4 +251,5 @@ export interface NotificationItem {
 
 export type ActiveTab = 'home' | 'energy' | 'wallet' | 'share' | 'settings' | 'device' | 'auth';
 export type EnergyPeriod = 'today' | 'daily' | 'week' | 'month';
-export type AppRoute = 'client' | 'admin';
+export type AppRoute = 'landing' | 'client' | 'admin';
+

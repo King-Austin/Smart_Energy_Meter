@@ -11,10 +11,25 @@ import { AuthScreen } from './screens/AuthScreen';
 import { TamperHistoryModal } from './components/notifications/TamperHistoryModal';
 import { AIAssistantDrawer } from './components/ai/AIAssistantDrawer';
 import { SuperAdminDashboard } from './screens/SuperAdminDashboard';
+import { LandingScreen } from './screens/LandingScreen';
 import { initNativeMobileApp } from './services/nativeService';
 
 const MainNavigator: React.FC = () => {
   const { currentRoute, activeTab, isAuthenticated, isTamperModalOpen, setIsTamperModalOpen } = useMeter();
+
+  useEffect(() => {
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.classList.remove('admin-layout', 'landing-layout', 'client-layout');
+      if (currentRoute === 'admin') {
+        rootEl.classList.add('admin-layout');
+      } else if (currentRoute === 'landing') {
+        rootEl.classList.add('landing-layout');
+      } else {
+        rootEl.classList.add('client-layout');
+      }
+    }
+  }, [currentRoute]);
 
   if (!isAuthenticated || activeTab === 'auth') {
     return <AuthScreen />;
@@ -30,7 +45,12 @@ const MainNavigator: React.FC = () => {
     );
   }
 
-  // 2. Client Dashboard Route (Zero Admin Interference, Clean & Dedicated)
+  // 2. Landing Page Route (Showcase, Specifications, & Direct APK Download)
+  if (currentRoute === 'landing') {
+    return <LandingScreen />;
+  }
+
+  // 3. Client Dashboard Route (Zero Admin Interference, Clean & Dedicated)
   return (
     <>
       <AppShell>

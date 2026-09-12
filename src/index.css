@@ -71,7 +71,8 @@ body {
 }
 
 /* Client Dashboard: Centered Mobile Frame */
-#root:not(.admin-layout) {
+#root:not(.admin-layout):not(.landing-layout),
+#root.client-layout {
   max-width: 440px;
   margin: 0 auto;
   border-left: 1px solid var(--border-subtle);
@@ -79,8 +80,20 @@ body {
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.05);
 }
 
-.dark #root:not(.admin-layout), [data-theme="dark"] #root:not(.admin-layout) {
+.dark #root:not(.admin-layout):not(.landing-layout), 
+[data-theme="dark"] #root:not(.admin-layout):not(.landing-layout),
+.dark #root.client-layout,
+[data-theme="dark"] #root.client-layout {
   box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Landing Page: Full Desktop Width & Immersive Canvas */
+#root.landing-layout {
+  max-width: 100% !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-color: #080a0f !important;
 }
 
 /* Super Admin Dashboard: Wide Enterprise Command Center */

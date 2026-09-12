@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMeter } from '../../context/MeterContext';
-import { Bell, Moon, Sun, Sliders, ZapOff, WifiOff, Building2 } from 'lucide-react';
+import { Bell, Moon, Sun, Sliders, ZapOff, WifiOff, Building2, Globe } from 'lucide-react';
 
 interface HeaderProps {
   onOpenNotifications: () => void;
@@ -96,6 +96,16 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNotifications }) => {
             ) : (
               <Moon className="w-4 h-4 text-slate-600" />
             )}
+          </button>
+
+          {/* Landing Page & Download Switcher */}
+          <button
+            onClick={() => navigateToRoute('landing')}
+            className="p-2.5 rounded-2xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 hover:text-[#ff5b26] transition-colors"
+            title="Voltrix Landing Page & APK Download"
+            aria-label="Landing Page"
+          >
+            <Globe className="w-4 h-4" />
           </button>
 
           {/* Super Admin Portal Switcher */}
