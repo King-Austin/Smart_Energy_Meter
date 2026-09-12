@@ -46,56 +46,27 @@ export const LandingMobileDownload: React.FC<LandingMobileDownloadProps> = ({
               trips occur, one-tap remote power disconnect, and automatic offline tracking when your home internet drops.
             </p>
 
-            {/* Specifications Card */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-              <div className={`p-3 rounded-xl border ${
-                isDark ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-white border-slate-200 shadow-xs'
-              }`}>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Package Format</div>
-                <div className={`text-sm font-black mt-0.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  Android APK
-                </div>
-              </div>
-              <div className={`p-3 rounded-xl border ${
-                isDark ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-white border-slate-200 shadow-xs'
-              }`}>
-                <div className="text-[10px] uppercase font-bold text-slate-400">File Size</div>
-                <div className="text-sm font-black text-[#ff5b26] mt-0.5">5.5 MB</div>
-              </div>
-              <div className={`p-3 rounded-xl border ${
-                isDark ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-white border-slate-200 shadow-xs'
-              }`}>
-                <div className="text-[10px] uppercase font-bold text-slate-400">Target OS</div>
-                <div className="text-sm font-black text-emerald-500 mt-0.5">Android 8.0+</div>
-              </div>
-            </div>
-
-            {/* Big Download Button */}
-            <div className="pt-3 flex flex-wrap items-center gap-4">
+            {/* Clean Download Action Buttons */}
+            <div className="pt-2 flex flex-wrap items-center gap-3.5">
               <button
                 type="button"
                 onClick={onDownload}
-                className="flex items-center gap-3 px-7 py-4 rounded-2xl bg-gradient-to-r from-[#ff5b26] to-[#e04512] hover:from-[#ff6d3d] hover:to-[#ff5b26] text-white font-black text-sm shadow-xl shadow-[#ff5b26]/30 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+                className="flex items-center gap-2.5 px-6 py-4 rounded-2xl bg-[#ff5b26] hover:bg-[#e04512] text-white font-bold text-sm shadow-xl shadow-[#ff5b26]/25 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
               >
-                <Download className={`w-5 h-5 text-white ${downloadStarted ? 'animate-bounce' : ''}`} />
-                <div className="text-left">
-                  <div className="text-base font-black">
-                    {downloadStarted ? 'Downloading APK...' : 'Download Android App (.APK)'}
-                  </div>
-                  <div className="text-[11px] text-white/80 font-medium">Production Build • Direct Install</div>
-                </div>
+                <Download className={`w-4 h-4 text-white ${downloadStarted ? 'animate-bounce' : ''}`} />
+                <span>{downloadStarted ? 'Downloading APK...' : 'Download for Android (.APK)'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={onOpenQrModal}
-                className={`flex items-center gap-2 px-5 py-4 rounded-2xl font-bold text-sm border transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-5 py-4 rounded-2xl font-semibold text-sm border transition-all cursor-pointer ${
                   isDark
-                    ? 'bg-white/[0.06] hover:bg-white/[0.1] border-white/10 text-white'
+                    ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/10 text-white'
                     : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 shadow-sm'
                 }`}
               >
-                <QrCode className="w-5 h-5 text-[#ff5b26]" />
+                <QrCode className="w-4 h-4 text-[#ff5b26]" />
                 <span>Scan QR Code</span>
               </button>
             </div>

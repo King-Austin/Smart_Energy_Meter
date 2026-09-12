@@ -53,22 +53,10 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         <button
           type="button"
           onClick={onDownload}
-          className="group relative flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-[#ff5b26] to-[#e04512] hover:from-[#ff6d3d] hover:to-[#ff5b26] text-white font-black text-sm shadow-xl shadow-[#ff5b26]/30 hover:shadow-[#ff5b26]/45 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+          className="flex items-center gap-2.5 px-6 py-4 rounded-2xl bg-[#ff5b26] hover:bg-[#e04512] text-white font-bold text-sm shadow-xl shadow-[#ff5b26]/25 transition-all transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
         >
-          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Download className={`w-4 h-4 text-white ${downloadStarted ? 'animate-bounce' : ''}`} />
-          </div>
-          <div className="text-left">
-            <div className="flex items-center gap-1.5">
-              <span>{downloadStarted ? 'Downloading APK...' : 'Download Android App'}</span>
-              <span className="text-[10px] uppercase font-black bg-white/20 px-1.5 py-0.2 rounded text-white">
-                .APK
-              </span>
-            </div>
-            <div className="text-[11px] text-white/80 font-medium">
-              v3.2.0 • Android 8.0+ • Direct Install
-            </div>
-          </div>
+          <Download className={`w-4 h-4 text-white ${downloadStarted ? 'animate-bounce' : ''}`} />
+          <span>{downloadStarted ? 'Downloading APK...' : 'Download for Android (.APK)'}</span>
         </button>
 
         <button

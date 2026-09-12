@@ -75,7 +75,7 @@ export const LandingQrModal: React.FC<LandingQrModalProps> = ({
             className="w-full py-3 rounded-xl bg-[#ff5b26] hover:bg-[#ff6d3d] text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4" />
-            <span>Direct Download on this PC (4.4 MB)</span>
+            <span>Direct APK Download</span>
           </button>
 
           <button
