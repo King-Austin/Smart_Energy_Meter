@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMeter } from '../../context/MeterContext';
 import { ShieldAlert, X, CheckCircle, KeyRound, AlertTriangle, Clock } from 'lucide-react';
+import { registerBackHandler } from '../../services/navigationService';
 
 interface TamperHistoryModalProps {
   isOpen: boolean;
@@ -13,6 +14,17 @@ export const TamperHistoryModal: React.FC<TamperHistoryModalProps> = ({ isOpen, 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Handle hardware back navigation
+  useEffect(() => {
+    if (isOpen) {
+      const unregister = registerBackHandler('tamper-history-modal', 25, () => {
+        onClose();
+        return true;
+      });
+      return () => unregister();
+    }
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -112,9 +124,18 @@ export const TamperHistoryModal: React.FC<TamperHistoryModalProps> = ({ isOpen, 
               </div>
 
               <div>
-                <label className="text-xs text-neutral-500 block mb-1">
-                  Enter 4-Digit Admin Security PIN (Default: 1234)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs text-neutral-500 block">
+                    Enter 4-Digit Security PIN (Default: 1234)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setAdminPin('1234')}
+                    className="text-[11px] font-bold text-[#ff5b26] hover:underline cursor-pointer"
+                  >
+                    Use Default (1234)
+                  </button>
+                </div>
                 <input
                   type="password"
                   maxLength={4}

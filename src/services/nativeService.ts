@@ -3,11 +3,15 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { Network, ConnectionStatus } from '@capacitor/network';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { initCapacitorBackNavigation } from './navigationService';
 
 /**
- * Initialize native mobile features (Status Bar, Safe Areas, Notification Channels)
+ * Initialize native mobile features (Status Bar, Safe Areas, Notification Channels, Back Navigation)
  */
 export async function initNativeMobileApp() {
+  // Always initialize back navigation (has native Capacitor + web popstate listeners)
+  initCapacitorBackNavigation();
+
   if (!Capacitor.isNativePlatform()) {
     console.log('[Native] Running in Web Browser mode.');
     return;

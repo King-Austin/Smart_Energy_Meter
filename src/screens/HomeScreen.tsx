@@ -6,10 +6,10 @@ import { WalletCard } from '../components/wallet/WalletCard';
 import { EnergyTodayCard } from '../components/home/EnergyTodayCard';
 import { LiveElectricalCard } from '../components/home/LiveElectricalCard';
 import { BudgetSnapshotCard } from '../components/home/BudgetSnapshotCard';
+import { QuickTamperUnlockCard } from '../components/home/QuickTamperUnlockCard';
 import {
   Zap,
   ShieldCheck,
-  ShieldAlert,
   AlertTriangle,
   RotateCcw,
   ChevronRight,
@@ -24,7 +24,6 @@ export const HomeScreen: React.FC = () => {
     walletTransactions,
     meterData,
     resetSafetyCutoff,
-    setIsTamperModalOpen,
     setIsAIAssistantOpen
   } = useMeter();
 
@@ -34,33 +33,8 @@ export const HomeScreen: React.FC = () => {
   return (
     <div className="space-y-4 pb-12 animate-fade-in">
       
-      {/* 1. Tamper Alert Banner (High Priority) */}
-      {isTampered && (
-        <div className="rounded-2xl p-4 bg-red-500/15 border-2 border-red-500 text-red-700 dark:text-red-300 shadow-md animate-pulse">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-red-500 text-white shrink-0 mt-0.5">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <h4 className="text-sm font-black uppercase tracking-tight">
-                SS-5GL Lid Tamper Interlock Engaged
-              </h4>
-              <p className="text-xs text-red-600 dark:text-red-300 mt-1 leading-relaxed">
-                Enclosure cover opened. Main power contactor is isolated for safety. Enter Admin PIN to inspect and restore supply.
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                <button
-                  onClick={() => setIsTamperModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
-                >
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Admin PIN Unlock & Forensics</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 1. Quick Tamper Unlock & Load Reconnect (High Priority) */}
+      <QuickTamperUnlockCard />
 
       {/* 2. Primary Active Balance Hero Card */}
       <WalletCard />

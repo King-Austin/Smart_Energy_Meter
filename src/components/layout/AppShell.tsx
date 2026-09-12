@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMeter } from '../../context/MeterContext';
 import { Header } from './Header';
 import { BottomNavigation } from './BottomNavigation';
 import { SimulationDrawer } from './SimulationDrawer';
 import { NotificationDrawer } from '../notifications/NotificationDrawer';
+import { registerBackHandler } from '../../services/navigationService';
 import { WifiOff, ZapOff, ArrowLeft } from 'lucide-react';
 
 interface AppShellProps {
@@ -11,8 +12,19 @@ interface AppShellProps {
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
-  const { meterData, activeTab, setActiveTab, isAuthenticated } = useMeter();
+  const { meterData, activeTab, goBack, isAuthenticated } = useMeter();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Close notifications drawer on back button (Priority 20 > Base 10)
+  useEffect(() => {
+    if (isNotificationsOpen) {
+      const unregister = registerBackHandler('notification-drawer', 20, () => {
+        setIsNotificationsOpen(false);
+        return true;
+      });
+      return () => unregister();
+    }
+  }, [isNotificationsOpen]);
 
   const isMeterOffline = meterData.device_status === 'offline';
   const isGridOutage = meterData.grid_status === 'offline';
@@ -50,7 +62,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {activeTab === 'device' && (
         <div className="px-5 py-3 flex items-center gap-3 border-b border-neutral-200/40 dark:border-neutral-800/60 bg-neutral-900/40">
           <button
-            onClick={() => setActiveTab('home')}
+            onClick={goBack}
             className="p-1.5 rounded-xl hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
