@@ -33,7 +33,8 @@ export const SettingsScreen: React.FC = () => {
     resetSafetyCutoff,
     toggleMainSupply,
     setActiveTab,
-    updateProfileName
+    updateProfileName,
+    updateProfileLocation
   } = useMeter();
 
   // Safety Cutoff Limits State (Smart Sliders)
@@ -47,13 +48,21 @@ export const SettingsScreen: React.FC = () => {
   const [profileName, setProfileName] = useState(meterData.meter_name || '');
   const [isSavingName, setIsSavingName] = useState(false);
 
+  // Geo-Location State
+  const [profileState, setProfileState] = useState(meterData.state || '');
+  const [profileLga, setProfileLga] = useState(meterData.lga || '');
+  const [isSavingLocation, setIsSavingLocation] = useState(false);
+  const [isLocationSaved, setIsLocationSaved] = useState(false);
+
   // Sync state if remote DB updates
   useEffect(() => {
     if (meterData.max_voltage_limit) setMaxVoltage(meterData.max_voltage_limit);
     if (meterData.min_voltage_limit) setMinVoltage(meterData.min_voltage_limit);
     if (meterData.bill_limit_threshold) setBillLimit(meterData.bill_limit_threshold);
     if (meterData.meter_name) setProfileName(meterData.meter_name);
-  }, [meterData.max_voltage_limit, meterData.min_voltage_limit, meterData.bill_limit_threshold, meterData.meter_name]);
+    if (meterData.state) setProfileState(meterData.state);
+    if (meterData.lga) setProfileLga(meterData.lga);
+  }, [meterData.max_voltage_limit, meterData.min_voltage_limit, meterData.bill_limit_threshold, meterData.meter_name, meterData.state, meterData.lga]);
 
   // Notification toggles state
   const [notifGridOutage, setNotifGridOutage] = useState(true);
@@ -74,6 +83,15 @@ export const SettingsScreen: React.FC = () => {
     await updateProfileName(profileName);
     setIsSavingName(false);
     setIsEditingName(false);
+  };
+
+  const handleSaveLocation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingLocation(true);
+    await updateProfileLocation(profileState, profileLga);
+    setIsSavingLocation(false);
+    setIsLocationSaved(true);
+    setTimeout(() => setIsLocationSaved(false), 2000);
   };
 
   const isTripped = meterData.voltage_cutoff_tripped || meterData.bill_cutoff_tripped;
@@ -425,7 +443,60 @@ export const SettingsScreen: React.FC = () => {
         )}
       </div>
 
-      {/* 5. Academic Research & Prototype Attribution Card */}
+      {/* 7. Geo-Location (Timeout Records) */}
+      <form onSubmit={handleSaveLocation} className="glass-card p-5 space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-neutral-800">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-neutral-300">
+              Geo-Location for Timeout Records
+            </h3>
+          </div>
+          {isLocationSaved && (
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" /> Saved
+            </span>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-1">State</label>
+            <input
+              type="text"
+              value={profileState}
+              onChange={(e) => setProfileState(e.target.value)}
+              placeholder="e.g. Lagos"
+              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#ff5b26]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 mb-1">Local Government Area (LGA)</label>
+            <input
+              type="text"
+              value={profileLga}
+              onChange={(e) => setProfileLga(e.target.value)}
+              placeholder="e.g. Ikeja"
+              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white focus:outline-none focus:border-[#ff5b26]"
+            />
+          </div>
+        </div>
+
+        <p className="text-[10px] text-slate-500 dark:text-neutral-400 leading-tight">
+          This data is used exclusively to map geographic locations for timeout tracking and grid analytics.
+        </p>
+
+        <button
+          type="submit"
+          disabled={isSavingLocation}
+          className="w-full btn-primary text-xs py-2.5 rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+        >
+          <Save className="w-4 h-4" />
+          <span>{isSavingLocation ? 'Saving...' : 'Save Location'}</span>
+        </button>
+      </form>
+
+      {/* 8. Academic Research & Prototype Attribution Card */}
       <div className="glass-card p-4 space-y-3 text-xs border-amber-500/20 bg-amber-500/[0.04]">
         <div className="flex items-center gap-2 text-[10px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400">
           <GraduationCap className="w-4 h-4" />

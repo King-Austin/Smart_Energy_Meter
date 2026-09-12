@@ -114,6 +114,7 @@ interface MeterContextType {
   login: (meterName?: string, meterId?: string) => void;
   logout: () => void;
   updateProfileName: (newName: string) => Promise<boolean>;
+  updateProfileLocation: (state: string, lga: string) => Promise<boolean>;
 
   // Sharing (Cloud Synchronized)
   startSharing: (
@@ -845,6 +846,39 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [meterData.meter_id, setMeterData, addNotification]);
 
+  const updateProfileLocation = useCallback(async (state: string, lga: string): Promise<boolean> => {
+    const trimmedState = state.trim();
+    const trimmedLga = lga.trim();
+
+    setMeterData(prev => ({
+      ...prev,
+      state: trimmedState,
+      lga: trimmedLga
+    }));
+
+    try {
+      if (isSupabaseConfigured()) {
+        const { error } = await supabase
+          .from('meters')
+          .update({
+            state: trimmedState,
+            lga: trimmedLga,
+            updated_at: new Date().toISOString()
+          })
+          .eq('meter_id', meterData.meter_id);
+
+        if (error) {
+          console.warn('[updateProfileLocation] Supabase update warning:', error.message);
+        }
+      }
+      addNotification('Geo-Location Updated', `Location set to ${trimmedLga}, ${trimmedState}.`, 'system');
+      return true;
+    } catch (err) {
+      console.warn('[updateProfileLocation] Error updating location:', err);
+      return true;
+    }
+  }, [meterData.meter_id, setMeterData, addNotification]);
+
   return (
     <MeterContext.Provider
       value={{
@@ -918,6 +952,7 @@ export const MeterProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         rechargeBattery,
         simulateVoltageSpike,
         updateProfileName,
+        updateProfileLocation,
         markAllNotificationsRead,
         dismissNotification,
         addNotification

@@ -330,6 +330,8 @@ CREATE TABLE public.meters (
     meter_id VARCHAR(64) PRIMARY KEY,
     meter_name VARCHAR(128) NOT NULL,
     location VARCHAR(256),
+    state VARCHAR(64),
+    lga VARCHAR(64),
     tariff_rate NUMERIC(10,2) DEFAULT 160.00,
     prepaid_units_kwh NUMERIC(12,4) DEFAULT 100.0000,
     main_supply_connected BOOLEAN DEFAULT TRUE,

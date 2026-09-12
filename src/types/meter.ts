@@ -37,6 +37,8 @@ export interface MeterTelemetry {
   meter_id: string;
   meter_name: string;
   location?: string;
+  state?: string;
+  lga?: string;
   building_id?: string;
   user_id: string;
   voltage: number; // V (e.g. 231.4)

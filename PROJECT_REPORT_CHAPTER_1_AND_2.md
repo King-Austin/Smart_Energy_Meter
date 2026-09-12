@@ -42,7 +42,7 @@ To achieve this aim, the specific objectives are to:
 2. Develop firmware on the **ESP32-S3 dual-core microcontroller** capable of running high-speed deterministic energy math on Core 1 while dedicating Core 0 to Wi-Fi, TLS encryption, and cloud synchronization.
 3. Implement a **Dual-CT differential bypass algorithm** ($|I_{\text{Live}} - I_{\text{Neutral}}| > 300\text{ mA}$) and enclosure microswitch interlock to detect and neutralize physical bypass and lid-opening tampering.
 4. Implement an **Autonomous Offline Energy Engine** using Non-Volatile Storage (NVS) wear-leveling that deducts prepaid kWh locally and trips a **40A magnetic latching contactor** at $0.00\text{ kWh}$ balance without requiring internet connectivity.
-5. Build a responsive, mobile-first web and PWA user interface (Voltrix) featuring live power topology flow diagrams, Apple Wallet style prepaid top-ups, and STS token synchronization.
+5. Build a responsive, mobile-first web and PWA user interface (Voltrix) featuring live power topology flow diagrams, Apple Wallet style prepaid top-ups, STS token synchronization, and geo-location metadata collection for tracing timeout areas and network analytics.
 6. Incorporate power grid hardening measures, including a **14D471K Metal Oxide Varistor (MOV)** for surge suppression, a wide-input **HLK-PM01 AC-DC power supply (85V–265V)**, and an internal **18650 Lithium backup battery**.
 
 ---
