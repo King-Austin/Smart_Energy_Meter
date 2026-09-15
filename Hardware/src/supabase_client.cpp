@@ -41,8 +41,8 @@ SupabaseSyncResult SupabaseClient::sendTelemetry(const char *meterId, const Sens
   StaticJsonDocument<384> doc;
   doc["p_meter_id"] = meterId;
   doc["p_voltage"] = serialized(String(readings.voltage, 2));
-  doc["p_current"] = serialized(String(readings.liveCurrent, 2));
-  doc["p_active_power"] = serialized(String(readings.activePower, 2));
+  doc["p_current"] = serialized(String(readings.liveCurrent, 3));
+  doc["p_active_power"] = serialized(String(readings.activePower, 4));
   doc["p_power_factor"] = serialized(String(readings.powerFactor, 2));
   doc["p_frequency"] = serialized(String(readings.frequency, 1));
   doc["p_is_tampered"] = state.isTampered; // Latched tamper state
@@ -105,8 +105,8 @@ bool SupabaseClient::uploadOfflineBatch(const char *meterId, const OfflineTeleme
     JsonObject obj = array.createNestedObject();
     obj["meter_id"] = meterId;
     obj["voltage"] = serialized(String(records[i].voltage, 2));
-    obj["current"] = serialized(String(records[i].liveCurrent, 2));
-    obj["active_power"] = serialized(String(records[i].activePower, 2));
+    obj["current"] = serialized(String(records[i].liveCurrent, 3));
+    obj["active_power"] = serialized(String(records[i].activePower, 4));
     obj["power_factor"] = serialized(String(records[i].powerFactor, 2));
     obj["frequency"] = serialized(String(records[i].frequency, 1));
     obj["is_tampered"] = records[i].isTampered;
